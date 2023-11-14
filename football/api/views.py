@@ -1,12 +1,12 @@
 from django.shortcuts import render
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, mixins
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.views import APIView
-from .serializers import UserSerializer,PlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer
-from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments
+from rest_framework.views import APIView, status
+from .serializers import UserSerializer,PlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer
+from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -18,7 +18,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         # Add custom claims
-        token['username'] = user.first_name
+        token['first_name'] = user.first_name
+        token['username'] = user.username
         # ...
 
         return token
@@ -60,6 +61,14 @@ class SportProfileTypeViewSet(viewsets.ModelViewSet):
     """
     queryset = SportProfileType.objects.all()
     serializer_class = SportProfileTypeSerializer
+
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = SportProfileType.objects.filter(user_id = pk)
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = SportProfileTypeSerializer(users, many=True)
+       return Response(user_list_json.data)
 
 class AddressViewSet(viewsets.ModelViewSet):
     """
@@ -121,21 +130,21 @@ class PlayerViewSet(viewsets.ModelViewSet):
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated]
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def player(request, pk = None):
-    if request.method == 'GET':
-        id = pk
-        if id is not None:
-            football_player = Player.objects.get(user = id)
-            football_player_serializer = PlayerSerializer(football_player)
-            return Response(football_player_serializer.data)   
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def player(request, pk = None):
+#     if request.method == 'GET':
+#         id = pk
+#         if id is not None:
+#             football_player = Player.objects.get(user = id)
+#             football_player_serializer = PlayerSerializer(football_player)
+#             return Response(football_player_serializer.data)   
     
-        user = request.user
-        print(user)
-        football_player = Player.objects.all()
-        football_player_serializer = PlayerSerializer(football_player, many=True)
-        return Response(football_player_serializer.data)
+#         user = request.user
+#         print(user)
+#         football_player = Player.objects.all()
+#         football_player_serializer = PlayerSerializer(football_player, many=True)
+#         return Response(football_player_serializer.data)
     
 class FootballCoachViewSet(viewsets.ModelViewSet):
     """
@@ -157,3 +166,143 @@ class FootballTournamentViewSet(viewsets.ModelViewSet):
     """
     queryset = FootballTournaments.objects.all()
     serializer_class = FootballTournamentsSerializer
+
+class MyNetworkRequestViewSet(viewsets.ModelViewSet):
+    
+    queryset = MyNetworkRequest.objects.all()
+    serializer_class = MyNetworkRequestSerializer
+
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = MyNetworkRequest.objects.filter(to_user = pk)
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = MyNetworkRequestSerializer(users, many=True)
+       return Response(user_list_json.data)
+
+# @api_view(['GET'])
+# def networkRequest(request, username = None):
+#     if request.method == 'GET':
+#         id = username
+#         if id is not None:
+#             touser = MyNetworkRequest.objects.get(to_user = id)
+#             touser_serializer = MyNetworkRequestSerializer(touser, many=True)
+#             return Response(touser_serializer.data)   
+    
+#         user = request.user
+#         print(user)
+#         touser = MyNetworkRequest.objects.all()
+#         touser_serializer = MyNetworkRequestSerializer(touser, many=True)
+#         return Response(touser_serializer.data)
+        
+class NetworkConnectedViewSet(viewsets.ModelViewSet):
+    
+    queryset = NetworkConnected.objects.all()
+    serializer_class = NetworkConnectedSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        """ if an array is passed, set serializer to many """
+        if isinstance(kwargs.get('data', {}), list):
+            kwargs['many'] = True
+        return super(NetworkConnectedViewSet, self).get_serializer(*args, **kwargs)
+
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = NetworkConnected.objects.filter(user_id = pk).order_by('-id')
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = NetworkConnectedSerializer(users, many=True)
+       return Response(user_list_json.data)
+    
+class NetworkConnectionsViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    """
+    ViewSet create and list books
+
+    Usage single : POST
+    {
+        "name":"Killing Floor: A Jack Reacher Novel", 
+        "author":"Lee Child"
+    }
+
+    Usage array : POST
+    [{  
+        "name":"Mr. Mercedes: A Novel (The Bill Hodges Trilogy)",
+        "author":"Stephen King"
+    },{
+        "name":"Killing Floor: A Jack Reacher Novel", 
+        "author":"Lee Child"
+    }]
+    """
+    queryset = NetworkConnected.objects.all()
+    serializer_class = NetworkConnectionsSerializer
+    search_fields = ('connect_to_user','status','user_id')
+
+    def create(self, request, *args, **kwargs):
+        """
+        #checks if post request data is an array initializes serializer with many=True
+        else executes default CreateModelMixin.create function 
+        """
+        is_many = isinstance(request.data, list)
+        if not is_many:
+            return super(NetworkConnectionsViewSet, self).create(request, *args, **kwargs)
+        else:
+            serializer = self.get_serializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+class FootballClubViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = FootballClub.objects.all()
+    serializer_class = FootballClubSerializer
+
+class ReferenceViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = Reference.objects.all()
+    serializer_class = ReferenceSerializer
+
+class ReferenceOutsideViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = ReferenceOutside.objects.all()
+    serializer_class = ReferenceOutsideSerializer
+
+class AgentOutsideViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = AgentOutside.objects.all()
+    serializer_class = AgentOutsideSerializer
+
+class AgentInsideViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = Agent.objects.all()
+    serializer_class = AgentInsideSerializer
+
+class GetAgentInsideViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = Agent.objects.all()
+    serializer_class = GetAgentInsideSerializer
+
+class VerifyRequestViewSet(viewsets.ModelViewSet):
+    
+    queryset = VerifyRequest.objects.all()
+    serializer_class = VerifyRequestSerializer
+
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = VerifyRequest.objects.filter(to_user = pk)
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = GetVerifyRequestSerializer(users, many=True)
+       return Response(user_list_json.data)

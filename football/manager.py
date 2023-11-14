@@ -4,8 +4,6 @@ class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def create_user(self, email, password = None, **extra_fields):
-        # if not username:
-        #     raise ValueError("Username is required")
         
         # if not extra_fields['email']:
         #     raise ValueError("Email is required")
@@ -15,6 +13,9 @@ class UserManager(BaseUserManager):
         
         if not extra_fields['contact_no']:
             raise ValueError("Contact number is required")
+        
+        # if not extra_fields['username']:
+        #     raise ValueError("Username is required")
         
         # extra_fields['email'] = self.normalize_email(extra_fields['email'])
         email = self.normalize_email(email)

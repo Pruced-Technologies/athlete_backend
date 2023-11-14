@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Type, SportProfileType, CustomUser, Address, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, FootballTournaments,FootballCoach,FootballCoachCareerHistory, Acheivements, FootballClub, FootballClubHistory, FootballClubOfficeBearer,ProfileDescription
+from . models import Type, SportProfileType, CustomUser, Address, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, FootballTournaments,FootballCoach,FootballCoachCareerHistory, Acheivements, FootballClub, FootballClubHistory, FootballClubOfficeBearer,ProfileDescription,MyNetworkRequest, NetworkConnected, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest
 
 # Register your models here.
 
@@ -49,7 +49,7 @@ class PlayerCareerHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(Club)
 class ClubAdmin(admin.ModelAdmin):
-    list_display = ("id", "club_name","games_played","club_goals","club_assists","type")
+    list_display = ("id", "club_name","games_played","club_goals","club_assists","type","status")
 
 @admin.register(FootballTournaments)
 class FootballTournamentsAdmin(admin.ModelAdmin):
@@ -57,11 +57,11 @@ class FootballTournamentsAdmin(admin.ModelAdmin):
 
 @admin.register(FootballCoachCareerHistory)
 class FootballCoachCareerHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "period", "games_played_as_player", "games_won_as_player", "games_lost_as_player", "games_tied_as_player", "playoffs_games_played_as_player", "total_no_tournaments_won_as_player")
+    list_display = ("id", "period", "club_id", "club_name", "league", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "type", "status")
 
 @admin.register(FootballCoach)
 class FootballCoachAdmin(admin.ModelAdmin):
-    list_display = ("id", "user","carreer_history","from_date","to_date","playoffs_games_coached_in","playoffs_games_won","playoffs_games_lost","current_team")
+    list_display = ("id", "user","from_date","to_date","playoffs_games_coached_in","playoffs_games_won","playoffs_games_lost","current_team")
 
 @admin.register(FootballClub)
 class FootballClubAdmin(admin.ModelAdmin):
@@ -74,3 +74,31 @@ class FootballClubHistoryAdmin(admin.ModelAdmin):
 @admin.register(FootballClubOfficeBearer)
 class FootballClubOfficeBearerAdmin(admin.ModelAdmin):
     list_display = ("id", "position", "name")
+
+@admin.register(MyNetworkRequest)
+class MyNetworkRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "from_user", "to_user", "status")
+
+@admin.register(NetworkConnected)
+class NetworkConnectedAdmin(admin.ModelAdmin):
+    list_display = ("id", "connect_to_user", "status")
+
+@admin.register(Reference)
+class ReferenceAdmin(admin.ModelAdmin):
+    list_display = ("id", "reffered_user")
+
+@admin.register(ReferenceOutside)
+class ReferenceOutsideAdmin(admin.ModelAdmin):
+    list_display = ("id", "reference_name", "contact")
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    list_display = ("id", "user")
+
+@admin.register(AgentOutside)
+class AgentOutsideAdmin(admin.ModelAdmin):
+    list_display = ("id", "agent_name", "contact")
+
+@admin.register(VerifyRequest)
+class VerifyRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "from_user", "to_user", "status")
