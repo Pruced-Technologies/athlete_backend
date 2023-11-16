@@ -9,6 +9,8 @@ from .serializers import UserSerializer,PlayerSerializer,ClubSerializer,Football
 from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.generics import ListAPIView
 
 # Create your views here.
 
@@ -306,3 +308,11 @@ class VerifyRequestViewSet(viewsets.ModelViewSet):
     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
        user_list_json = GetVerifyRequestSerializer(users, many=True)
        return Response(user_list_json.data)
+    
+class PlayerSearchViewSet(ListAPIView):
+    queryset = Player.objects.all()
+    serializer_class = PlayerSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
+    # filter_backends = [filters.SearchFilter]
+    # search_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']

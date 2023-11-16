@@ -96,32 +96,6 @@ class FootballClub(models.Model):
         # return self.user.email
         return "%s %s" % (self.user.email, self.founded_in)
     
-# class Agent(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-#     # user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='agent_inside', null=True, blank=True)
-
-#     def __str__(self):
-#         return self.user.email
-    
-# class AgentOutside(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     agent_name = models.CharField(max_length=100,null=True,blank=True)
-#     contact = models.CharField(max_length=12,null=True,blank=True)
-#     user_id = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='agent_outside', null=True, blank=True)
-
-#     def __str__(self):
-#         return self.agent_name
-
-
-# class Reference(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     reffered_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-#     # user_id = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='reference_users_inside', null=True, blank=True)
-
-#     def __str__(self):
-#         return self.reffered_user.email
-    
 class Player(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player', blank=True, null=True)
@@ -237,16 +211,6 @@ class FootballTournaments(models.Model):
 
     def __str__(self):
         return self.tournaments_name
-    
-# class FootballClub(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club', null=True, blank=True)
-#     founded_in = models.DateField(null=True,blank=True)
-#     # player_id = models.ManyToManyField(Player, related_name='player_current_club_inside', blank=True)
-#     # coach_id = models.ManyToManyField(FootballCoach, related_name='coach_current_club_inside', blank=True)
-
-#     def __str__(self):
-#         return "%s %s" % (self.user.email, self.founded_in)
 
 class FootballClubHistory(models.Model):
     id = models.AutoField(primary_key=True)
