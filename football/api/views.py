@@ -5,12 +5,16 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView, status
-from .serializers import UserSerializer,PlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer
+from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer
 from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import ListAPIView
+from django_filters import rest_framework as filters
+from django.db import models
+from django.conf import settings
+from django.core.mail import EmailMessage
 
 # Create your views here.
 
@@ -21,6 +25,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Add custom claims
         token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
         token['username'] = user.username
         # ...
 
@@ -53,7 +58,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    filter_backends = [filters.OrderingFilter]
+    # filter_backends = [filters.OrderingFilter]
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -179,7 +184,7 @@ class MyNetworkRequestViewSet(viewsets.ModelViewSet):
     #    users = self.get_object() # retrieve an object by pk provided
        users = MyNetworkRequest.objects.filter(to_user = pk)
     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
-       user_list_json = MyNetworkRequestSerializer(users, many=True)
+       user_list_json = GetMyNetworkRequestSerializer(users, many=True)
        return Response(user_list_json.data)
 
 # @api_view(['GET'])
@@ -309,10 +314,81 @@ class VerifyRequestViewSet(viewsets.ModelViewSet):
        user_list_json = GetVerifyRequestSerializer(users, many=True)
        return Response(user_list_json.data)
     
+
+class PlayerFilter(filters.FilterSet):
+    # user__first_name = filters.CharFilter(lookup_expr='icontains')
+    # user__last_name = filters.CharFilter(lookup_expr='icontains')
+    # primary_position = filters.CharFilter(lookup_expr='icontains')
+    # secondary_position = filters.CharFilter(lookup_expr='icontains')
+    # preferred_foot = filters.CharFilter(lookup_expr='icontains')
+    # current_club_inside_name = filters.CharFilter(lookup_expr='icontains')
+    class Meta:
+        model = Player
+        # fields = {
+        #     'user__first_name': ['exact', 'contains'],
+        #     'user__last_name': ['exact', 'contains'],
+        #     'primary_position': ['exact', 'contains'],
+        #     'secondary_position': ['exact', 'contains'],
+        #     'top_speed': ['exact'],
+        #     'preferred_foot': ['exact', 'contains'],
+        #     'current_club_inside_name': ['exact', 'contains'],
+        # }
+        fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
+        filter_overrides = {
+            models.CharField: {
+                'filter_class': filters.CharFilter,
+                'extra': lambda f: {
+                    'lookup_expr': 'icontains',
+                },
+            },
+        }
+    
 class PlayerSearchViewSet(ListAPIView):
     queryset = Player.objects.all()
-    serializer_class = PlayerSerializer
+    serializer_class = GetPlayerSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
+    # filterset_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
     # filter_backends = [filters.SearchFilter]
     # search_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
+    filterset_class = PlayerFilter
+
+class CoachFilter(filters.FilterSet):
+
+    class Meta:
+        model = FootballCoach
+        # fields = {
+        #     'user__first_name': ['exact', 'contains'],
+        #     'user__last_name': ['exact', 'contains'],
+        #     'current_team': ['exact', 'contains'],
+        # }
+        fields = ['user__first_name', 'user__last_name', 'current_team']
+        filter_overrides = {
+            models.CharField: {
+                'filter_class': filters.CharFilter,
+                'extra': lambda f: {
+                    'lookup_expr': 'icontains',
+                },
+            },
+        }
+
+class CoachSearchViewSet(ListAPIView):
+    queryset = FootballCoach.objects.all()
+    serializer_class = GetFootballCoachSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CoachFilter
+    # filterset_fields = ['user__first_name', 'user__last_name', 'current_team']
+    # filter_backends = [filters.SearchFilter]
+    # search_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
+
+class Sendmail(APIView):
+    def post(self,request):
+        email=request.data['to']
+        email_body=request.data['message']
+        emailmes=EmailMessage(
+            'Invitaion from Scouting',
+            email_body,
+            settings.EMAIL_HOST_USER,
+            [email]
+        )
+        emailmes.send(fail_silently=False)
+        return Response({'status':True,'message':'Email sent successfully'})

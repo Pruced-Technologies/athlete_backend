@@ -2,7 +2,8 @@ from django.urls import path, include
 from . import views
 from django.conf.urls.static import static
 from django.conf import settings
-from .views import MyTokenObtainPairView,registerView,PlayerViewSet,ClubViewSet,UserViewSet,PlayerSearchViewSet,FootballCoachViewSet,SportProfileTypeViewSet,AddressViewSet,ProfilePhotoViewSet,PlayerAcheivementsViewSet,VideoClipViewSet,ProfileDescriptionViewSet,PlayerCareerHistoryViewSet,FootballCoachCareerHistoryViewSet,FootballTournamentViewSet,MyNetworkRequestViewSet,NetworkConnectedViewSet, NetworkConnectionsViewSet, FootballClubViewSet, ReferenceViewSet, ReferenceOutsideViewSet, AgentInsideViewSet, AgentOutsideViewSet, GetAgentInsideViewSet, VerifyRequestViewSet
+# from .views import MyTokenObtainPairView,registerView,PlayerViewSet,ClubViewSet,UserViewSet,PlayerSearchViewSet,FootballCoachViewSet,SportProfileTypeViewSet,AddressViewSet,ProfilePhotoViewSet,PlayerAcheivementsViewSet,VideoClipViewSet,ProfileDescriptionViewSet,PlayerCareerHistoryViewSet,FootballCoachCareerHistoryViewSet,FootballTournamentViewSet,MyNetworkRequestViewSet,NetworkConnectedViewSet, NetworkConnectionsViewSet, FootballClubViewSet, ReferenceViewSet, ReferenceOutsideViewSet, AgentInsideViewSet, AgentOutsideViewSet, GetAgentInsideViewSet, VerifyRequestViewSet, CoachSearchViewSet
+from .views import *
 from rest_framework import routers
 
 from rest_framework_simplejwt.views import (
@@ -52,12 +53,7 @@ urlpatterns = [
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('search/player', PlayerSearchViewSet.as_view(), name='search_player'),
-    # path('footballplayer/', views.footballPlayer, name='football_player'),
-    # path('footballplayer/', views.player, name='football_player'),
-    # path('footballplayer/<int:pk>/', views.player),
-    # path('networkconnectrequest/<str:username>/', views.networkRequest),
-    # path('networkconnectrequest/', views.networkRequest),
-    # path('footballplayer/ ([0-9]+)$', views.player, name='football_player'),
-    # path('footballclub/', views.footballClub, name='football_club'),
+    path('search/coach', CoachSearchViewSet.as_view(), name='search_coach'),
+    path('send/mail', Sendmail.as_view(), name='send_mail'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
