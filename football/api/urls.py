@@ -42,10 +42,11 @@ router.register(r'agentinside', AgentInsideViewSet, basename='agentinside')
 router.register(r'getagentinside', GetAgentInsideViewSet, basename='getagentinside')
 router.register(r'verifyrequest', VerifyRequestViewSet, basename='verifyrequest')
 router.register(r'verifyrequest/:pk/request_list', VerifyRequestViewSet, basename='verifyrequestpk')
-# router.register(r'register/', registerView.as_view(), basename='register')
-# router.register(r'login/', MyTokenObtainPairView.as_view(), basename='token_obtain_pair')
-# router.register(r'token/refresh/', TokenRefreshView.as_view(), basename='token_refresh')
-# router.register(r'footballplayer/', views.player, basename='football_player')
+router.register(r'likes', PostLikesViewSet, basename='likes')
+router.register(r'comments', PostCommentsViewSet, basename='comments')
+router.register(r'getallcomments', GetAllPostCommentsListViewSet, basename='getallcomments')
+router.register(r'postitem', PostItemsViewSet, basename='postitem')
+router.register(r'getpostitem', GetPostItemsViewSet, basename='getpostitem')
 
 urlpatterns = [
     # path('', views.getRoutes),
@@ -55,5 +56,7 @@ urlpatterns = [
     path('search/player', PlayerSearchViewSet.as_view(), name='search_player'),
     path('search/coach', CoachSearchViewSet.as_view(), name='search_coach'),
     path('send/mail', Sendmail.as_view(), name='send_mail'),
+    path('get/comments/<slug:slug>/<int:limit>/', GetPostCommentsViewSet.as_view(), name='get_comments'),
+    # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

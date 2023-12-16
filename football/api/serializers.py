@@ -1,15 +1,5 @@
 from rest_framework import serializers
-from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest
-
-
-# class CustomUserSerializer(serializers.ModelSerializer):
-
-#     class Meta(object):
-#         model = CustomUser 
-#         fields = '__all__'
-#         extra_kwargs = {
-#             'password': {'write_only': True}
-#         }
+from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes
 
 class NetworkConnectionsSerializer(serializers.ModelSerializer):
     # connect_to_user = ConnectUserSerializer()
@@ -382,3 +372,52 @@ class VerifyRequestSerializer(serializers.ModelSerializer):
         model = VerifyRequest
         fields = ("id", "from_user", "to_user", "status","profile_type","club_id","coach_club_id")
         extra_kwargs = {'club_id': {'required': False},'coach_club_id': {'required': False}}
+
+class PostLikesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = PostLikes
+        fields = ("id", "user", "posted", "post_id")
+
+class GetPostLikesSerializer(serializers.ModelSerializer):
+    user=CustomUserSerializer()
+
+    class Meta:
+        ordering = ['-id']
+        model = PostLikes
+        fields = ("id", "user", "posted", "post_id")
+
+class PostCommentsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = PostComments
+        fields = ("id", "user", "comment", "posted", "post_id")
+
+class GetPostCommentsSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer()
+
+    class Meta:
+        model = PostComments
+        fields = ("id", "user", "comment", "posted", "post_id")
+        ordering = ['-posted']
+        lookup_field = 'post_id'
+
+class PostItemSerializer(serializers.ModelSerializer):
+    comments = GetPostCommentsSerializer(many=True, read_only=True)
+
+    class Meta:
+        ordering = ['-id']
+        model = PostItem
+        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")
+
+class GetPostItemSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer()
+    comments = GetPostCommentsSerializer(many=True, read_only=True)
+    likes = GetPostLikesSerializer(many=True, read_only=True)
+
+    class Meta:
+        ordering = ['-id']
+        model = PostItem
+        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")

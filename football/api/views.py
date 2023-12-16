@@ -1,12 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, filters, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView, status
-from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer
-from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest
+from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer
+from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
@@ -392,3 +392,42 @@ class Sendmail(APIView):
         )
         emailmes.send(fail_silently=False)
         return Response({'status':True,'message':'Email sent successfully'})
+    
+class PostLikesViewSet(viewsets.ModelViewSet):
+    
+    queryset = PostLikes.objects.all()
+    serializer_class = PostLikesSerializer
+    
+class GetAllPostCommentsListViewSet(viewsets.ModelViewSet):
+    
+    queryset = PostComments.objects.all()
+    serializer_class = GetPostCommentsSerializer
+    
+class GetPostCommentsViewSet(APIView):
+    def get(self, request, slug, limit):
+        try:
+            item = PostComments.objects.get(post_id=slug)
+        except PostComments.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except PostComments.MultipleObjectsReturned:
+            # limit = request.query_params.get('limit', 10)
+            items = PostComments.objects.filter(post_id=slug).order_by('-posted')[:int(limit)]
+            serializer = GetPostCommentsSerializer(items, many=True)
+            return Response(serializer.data)
+        serializer = GetPostCommentsSerializer(item)
+        return Response(serializer.data)
+
+class PostCommentsViewSet(viewsets.ModelViewSet):
+    
+    queryset = PostComments.objects.all()
+    serializer_class = PostCommentsSerializer
+
+class PostItemsViewSet(viewsets.ModelViewSet):
+    
+    queryset = PostItem.objects.all()
+    serializer_class = PostItemSerializer
+
+class GetPostItemsViewSet(viewsets.ModelViewSet):
+    
+    queryset = PostItem.objects.all().order_by('-posted')
+    serializer_class = GetPostItemSerializer

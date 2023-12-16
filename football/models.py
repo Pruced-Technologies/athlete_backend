@@ -3,10 +3,15 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from datetime import date
 from .manager import UserManager
+import uuid
 # from django.contrib.auth import get_user_model
 # User = get_user_model()
 
 # Create your models here.
+
+def user_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+    return "user_{0}/{1}".format(instance.user.id, filename)
 
 class Type(models.Model):
     id = models.AutoField(primary_key=True)
@@ -320,3 +325,43 @@ class VerifyRequest(models.Model):
     def __str__(self):
         # return self.to_user
         return "%s %s %s" % (self.from_user.username, self.to_user, self.status)
+    
+    
+class PostItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    picture = models.ImageField(upload_to=user_directory_path,null=True,blank=True)
+    description = models.TextField(null=True,blank=True)
+    posted = models.DateTimeField(auto_now_add=True)
+    # likes = models.IntegerField(default=0)
+    video_link = models.CharField(max_length=255,null=True,blank=True)
+    type = models.CharField(max_length=10,null=True,blank=True)
+    # comments = models.ManyToManyField(PostComments, related_name='comments', blank=True)
+
+    def __str__(self):
+        # return self.description
+        return "%s %s" % (self.user, self.description)
+    
+class PostComments(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.TextField(null=True,blank=True)
+    posted = models.DateTimeField(auto_now_add=True, null=True)
+    post_id = models.ForeignKey(PostItem, on_delete=models.CASCADE, related_name='comments', blank=True, null=True)
+
+    class Meta:
+        ordering = ['-posted']
+    
+    def __str__(self):
+        # return self.comment
+        return "%s %s" % (self.user, self.comment)
+    
+class PostLikes(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    posted = models.DateTimeField(auto_now_add=True)
+    post_id = models.ForeignKey(PostItem, on_delete=models.CASCADE, related_name='likes', blank=True, null=True)
+
+    def __str__(self):
+        # return self.comment
+        return "%s %s" % (self.user, self.post_id)
