@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView, status
-from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer
-from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes
+from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer, NewsSerializer, GetNewsSerializer
+from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes, News
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
@@ -133,7 +133,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
     """
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
-    filter_backends = [filters.OrderingFilter]
+    # filter_backends = [filters.OrderingFilter]
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated]
 
@@ -201,6 +201,15 @@ class MyNetworkRequestViewSet(viewsets.ModelViewSet):
 #         touser = MyNetworkRequest.objects.all()
 #         touser_serializer = MyNetworkRequestSerializer(touser, many=True)
 #         return Response(touser_serializer.data)
+    
+@api_view(['PATCH'])
+def networkConnect(request, id):
+    my_models = NetworkConnected.objects.filter(network_request_id=id)
+    for my_model in my_models:
+        serializer = NetworkConnectionsSerializer(my_model, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+    return Response
         
 class NetworkConnectedViewSet(viewsets.ModelViewSet):
     
@@ -242,7 +251,7 @@ class NetworkConnectionsViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, 
     """
     queryset = NetworkConnected.objects.all()
     serializer_class = NetworkConnectionsSerializer
-    search_fields = ('connect_to_user','status','user_id')
+    search_fields = ('connect_to_user','status','user_id','network_request_id')
 
     def create(self, request, *args, **kwargs):
         """
@@ -316,23 +325,9 @@ class VerifyRequestViewSet(viewsets.ModelViewSet):
     
 
 class PlayerFilter(filters.FilterSet):
-    # user__first_name = filters.CharFilter(lookup_expr='icontains')
-    # user__last_name = filters.CharFilter(lookup_expr='icontains')
-    # primary_position = filters.CharFilter(lookup_expr='icontains')
-    # secondary_position = filters.CharFilter(lookup_expr='icontains')
-    # preferred_foot = filters.CharFilter(lookup_expr='icontains')
-    # current_club_inside_name = filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = Player
-        # fields = {
-        #     'user__first_name': ['exact', 'contains'],
-        #     'user__last_name': ['exact', 'contains'],
-        #     'primary_position': ['exact', 'contains'],
-        #     'secondary_position': ['exact', 'contains'],
-        #     'top_speed': ['exact'],
-        #     'preferred_foot': ['exact', 'contains'],
-        #     'current_club_inside_name': ['exact', 'contains'],
-        # }
         fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
         filter_overrides = {
             models.CharField: {
@@ -347,20 +342,12 @@ class PlayerSearchViewSet(ListAPIView):
     queryset = Player.objects.all()
     serializer_class = GetPlayerSerializer
     filter_backends = [DjangoFilterBackend]
-    # filterset_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
-    # filter_backends = [filters.SearchFilter]
-    # search_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
     filterset_class = PlayerFilter
 
 class CoachFilter(filters.FilterSet):
 
     class Meta:
         model = FootballCoach
-        # fields = {
-        #     'user__first_name': ['exact', 'contains'],
-        #     'user__last_name': ['exact', 'contains'],
-        #     'current_team': ['exact', 'contains'],
-        # }
         fields = ['user__first_name', 'user__last_name', 'current_team']
         filter_overrides = {
             models.CharField: {
@@ -376,10 +363,7 @@ class CoachSearchViewSet(ListAPIView):
     serializer_class = GetFootballCoachSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = CoachFilter
-    # filterset_fields = ['user__first_name', 'user__last_name', 'current_team']
-    # filter_backends = [filters.SearchFilter]
-    # search_fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot']
-
+    
 class Sendmail(APIView):
     def post(self,request):
         email=request.data['to']
@@ -431,3 +415,13 @@ class GetPostItemsViewSet(viewsets.ModelViewSet):
     
     queryset = PostItem.objects.all().order_by('-posted')
     serializer_class = GetPostItemSerializer
+
+class NewsViewSet(viewsets.ModelViewSet):
+    
+    queryset = News.objects.all()
+    serializer_class = NewsSerializer
+
+class GetNewsViewSet(viewsets.ModelViewSet):
+    
+    queryset = News.objects.all().order_by('-posted')
+    serializer_class = GetNewsSerializer

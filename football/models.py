@@ -270,9 +270,9 @@ class MyNetworkRequest(models.Model):
 class NetworkConnected(models.Model):
     id = models.AutoField(primary_key=True)
     connect_to_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    # connect_to_user2 = models.IntegerField(null=True,blank=True)
     status = models.CharField(max_length=100,null=True,blank=True)
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='connected_users', null=True, blank=True)
+    network_request_id = models.IntegerField(null=True,blank=True)
 
     def __str__(self):
         return "%s %s" % (self.connect_to_user.username, self.status)
@@ -365,3 +365,16 @@ class PostLikes(models.Model):
     def __str__(self):
         # return self.comment
         return "%s %s" % (self.user, self.post_id)
+    
+class News(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    posted = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=255,null=True,blank=True)
+    content = models.TextField(null=True,blank=True)
+    picture = models.ImageField(upload_to="event",null=True,blank=True)
+    # readers = models.ManyToManyField(CustomUser, blank=True)
+
+    def __str__(self):
+        # return self.comment
+        return "%s %s" % (self.user, self.title)

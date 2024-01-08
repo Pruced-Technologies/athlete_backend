@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes
+from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes, News
 
 class NetworkConnectionsSerializer(serializers.ModelSerializer):
     # connect_to_user = ConnectUserSerializer()
@@ -7,7 +7,7 @@ class NetworkConnectionsSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = NetworkConnected
-        fields = ("id", "connect_to_user", "status", "user_id")
+        fields = ("id", "connect_to_user", "status", "user_id", "network_request_id")
         extra_kwargs = {'user_id': {'required': False}}
 
 class ProfilePhotoSerializer(serializers.ModelSerializer):
@@ -181,7 +181,7 @@ class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = Player
-        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside","current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside")
+        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside","current_club_inside_name","current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside")
         extra_kwargs = {'club': {'required': False}, 'carreer_history': {'required': False}, 'player_acheivements': {'required': False}, 'agent_inside': {'required': False}, 'reference_users_inside': {'required': False}, 'agent_outside': {'required': False}, 'reference_users_outside': {'required': False}}
 
 class GetPlayerSerializer(serializers.ModelSerializer):
@@ -280,8 +280,11 @@ class NetworkConnectedSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = NetworkConnected
-        fields = ("id", "connect_to_user", "status", "user_id")
-        extra_kwargs = {'user_id': {'required': False}}
+        fields = ("id", "connect_to_user", "status", "user_id", "network_request_id")
+        extra_kwargs = {
+            'user_id': {'required': False},
+            'network_request_id': {'required': False},
+        }
 
     # def create(self, validated_data):
     #     order_items_data = validated_data.pop('order_items')
@@ -396,7 +399,7 @@ class PostCommentsSerializer(serializers.ModelSerializer):
         fields = ("id", "user", "comment", "posted", "post_id")
 
 class GetPostCommentsSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer()
+    user = UserSerializer()
 
     class Meta:
         model = PostComments
@@ -413,7 +416,7 @@ class PostItemSerializer(serializers.ModelSerializer):
         fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")
 
 class GetPostItemSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer()
+    user = UserSerializer()
     comments = GetPostCommentsSerializer(many=True, read_only=True)
     likes = GetPostLikesSerializer(many=True, read_only=True)
 
@@ -421,3 +424,18 @@ class GetPostItemSerializer(serializers.ModelSerializer):
         ordering = ['-id']
         model = PostItem
         fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")
+
+class NewsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = News
+        fields = ("id", "user", "posted", "title", "content", "picture")
+
+class GetNewsSerializer(serializers.ModelSerializer):
+    user=CustomUserSerializer()
+
+    class Meta:
+        ordering = ['-id']
+        model = News
+        fields = ("id", "user", "posted", "title", "content", "picture")

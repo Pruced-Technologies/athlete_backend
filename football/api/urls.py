@@ -47,6 +47,8 @@ router.register(r'comments', PostCommentsViewSet, basename='comments')
 router.register(r'getallcomments', GetAllPostCommentsListViewSet, basename='getallcomments')
 router.register(r'postitem', PostItemsViewSet, basename='postitem')
 router.register(r'getpostitem', GetPostItemsViewSet, basename='getpostitem')
+router.register(r'news', NewsViewSet, basename='news')
+router.register(r'getnews', GetNewsViewSet, basename='getnews')
 
 urlpatterns = [
     # path('', views.getRoutes),
@@ -57,6 +59,7 @@ urlpatterns = [
     path('search/coach', CoachSearchViewSet.as_view(), name='search_coach'),
     path('send/mail', Sendmail.as_view(), name='send_mail'),
     path('get/comments/<slug:slug>/<int:limit>/', GetPostCommentsViewSet.as_view(), name='get_comments'),
+    path('connectrequest/<int:id>/', views.networkConnect),
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

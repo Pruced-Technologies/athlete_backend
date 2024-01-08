@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Type, SportProfileType, CustomUser, Address, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, FootballTournaments,FootballCoach,FootballCoachCareerHistory, Acheivements, FootballClub, FootballClubHistory, FootballClubOfficeBearer,ProfileDescription,MyNetworkRequest, NetworkConnected, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes
+from . models import Type, SportProfileType, CustomUser, Address, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, FootballTournaments,FootballCoach,FootballCoachCareerHistory, Acheivements, FootballClub, FootballClubHistory, FootballClubOfficeBearer,ProfileDescription,MyNetworkRequest, NetworkConnected, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes, News
 
 # Register your models here.
 
@@ -81,7 +81,7 @@ class MyNetworkRequestAdmin(admin.ModelAdmin):
 
 @admin.register(NetworkConnected)
 class NetworkConnectedAdmin(admin.ModelAdmin):
-    list_display = ("id", "connect_to_user", "status")
+    list_display = ("id", "connect_to_user", "status", "user_id", "network_request_id")
 
 @admin.register(Reference)
 class ReferenceAdmin(admin.ModelAdmin):
@@ -114,3 +114,7 @@ class PostLikesAdmin(admin.ModelAdmin):
 @admin.register(PostItem)
 class PostItemAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "picture", "description", "posted", "likes", "video_link")
+
+@admin.register(News)
+class NewsAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "posted", "title", "content")
