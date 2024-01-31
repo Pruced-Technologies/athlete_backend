@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView, status
-from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer, ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer, NewsSerializer, GetNewsSerializer
-from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes, News
+from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer,FootballClubHistorySerializer,FootballClubOfficeBearerSerializer,ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer, NewsSerializer, GetNewsSerializer, GetFootballClubSerializer
+from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub, FootballClubHistory,FootballClubOfficeBearer,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes, News
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
@@ -15,6 +15,7 @@ from django_filters import rest_framework as filters
 from django.db import models
 from django.conf import settings
 from django.core.mail import EmailMessage
+from django.utils import timezone
 
 # Create your views here.
 
@@ -275,6 +276,20 @@ class FootballClubViewSet(viewsets.ModelViewSet):
     queryset = FootballClub.objects.all()
     serializer_class = FootballClubSerializer
 
+class FootballClubHistoryViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = FootballClubHistory.objects.all()
+    serializer_class = FootballClubHistorySerializer
+
+class FootballClubOfficeBearerViewSet(viewsets.ModelViewSet):
+    """
+    List all workkers, or create a new worker.
+    """
+    queryset = FootballClubOfficeBearer.objects.all()
+    serializer_class = FootballClubOfficeBearerSerializer
+
 class ReferenceViewSet(viewsets.ModelViewSet):
     """
     List all workkers, or create a new worker.
@@ -363,6 +378,46 @@ class CoachSearchViewSet(ListAPIView):
     serializer_class = GetFootballCoachSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = CoachFilter
+
+class AgentFilter(filters.FilterSet):
+
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'sport_type']
+        filter_overrides = {
+            models.CharField: {
+                'filter_class': filters.CharFilter,
+                'extra': lambda f: {
+                    'lookup_expr': 'icontains',
+                },
+            },
+        }
+
+class AgentSearchViewSet(ListAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = AgentFilter
+
+class ClubFilter(filters.FilterSet):
+
+    class Meta:
+        model = FootballClub
+        fields = ['user__first_name', 'user__sport_type']
+        filter_overrides = {
+            models.CharField: {
+                'filter_class': filters.CharFilter,
+                'extra': lambda f: {
+                    'lookup_expr': 'icontains',
+                },
+            },
+        }
+
+class ClubSearchViewSet(ListAPIView):
+    queryset = FootballClub.objects.all()
+    serializer_class = GetFootballClubSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ClubFilter
     
 class Sendmail(APIView):
     def post(self,request):
@@ -416,12 +471,43 @@ class GetPostItemsViewSet(viewsets.ModelViewSet):
     queryset = PostItem.objects.all().order_by('-posted')
     serializer_class = GetPostItemSerializer
 
-class NewsViewSet(viewsets.ModelViewSet):
+class NewsAllViewSet(viewsets.ModelViewSet):
     
-    queryset = News.objects.all()
+    queryset = News.objects.all().order_by('-id')
     serializer_class = NewsSerializer
+
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = News.objects.filter(user = pk)
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = NewsSerializer(users, many=True)
+       return Response(user_list_json.data)
 
 class GetNewsViewSet(viewsets.ModelViewSet):
     
-    queryset = News.objects.all().order_by('-posted')
+    queryset = News.objects.all().order_by('-id')
     serializer_class = GetNewsSerializer
+
+class NewsFilter(filters.FilterSet):
+  end_date = filters.DateFilter(field_name='end_date', lookup_expr='lt')
+  class Meta:
+    model = News
+    fields = ['end_date']
+
+class NewsViewSet(viewsets.ModelViewSet):
+    
+    # queryset = News.objects.all().order_by('-start_date')
+    today = timezone.localtime().date()
+    queryset = News.objects.filter(end_date__gt=today).order_by('-start_date')
+    serializer_class = NewsSerializer
+    # filter_backends = [filters.DjangoFilterBackend]
+    # filter_class = NewsFilter
+
+
+# class GetNewsViewSet(viewsets.ModelViewSet):
+    
+#     queryset = News.objects.all().order_by('-start_date')
+#     serializer_class = GetNewsSerializer
+#     filter_backends = [filters.DjangoFilterBackend]
+#     filter_class = NewsFilter

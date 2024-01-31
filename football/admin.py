@@ -65,7 +65,7 @@ class FootballCoachAdmin(admin.ModelAdmin):
 
 @admin.register(FootballClub)
 class FootballClubAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "founded_in")
+    list_display = ("id", "user")
 
 @admin.register(FootballClubHistory)
 class FootballClubHistoryAdmin(admin.ModelAdmin):

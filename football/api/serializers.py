@@ -47,7 +47,7 @@ class ProfileDescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = ProfileDescription
-        fields = ("id", "title","description", "user_id")
+        fields = ("id", "title","description", "profile_type","user_id")
         extra_kwargs = {'user_id': {'required': False}}
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -85,8 +85,8 @@ class AcheivementsSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = Acheivements
-        fields = ("id", "acheivement_name", "period", "player_id", "coach_id")
-        extra_kwargs = {'player_id': {'required': False}, 'coach_id': {'required': False}}
+        fields = ("id", "acheivement_name", "period", "player_id", "coach_id", "club_id")
+        extra_kwargs = {'player_id': {'required': False}, 'coach_id': {'required': False}, 'club_id':  {'required': False}}
 
 class FootballClubOfficeBearerSerializer(serializers.ModelSerializer):
 
@@ -108,14 +108,29 @@ class FootballClubSerializer(serializers.ModelSerializer):
     # user = ClubUserSerializer()
     office_bearer = FootballClubOfficeBearerSerializer(many=True, read_only=True)
     club_history = FootballClubHistorySerializer(many=True, read_only=True)
+    club_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = PlayerSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballCoachSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = FootballClub
-        fields = ("id", "user", "founded_in","office_bearer","club_history")
-        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}}
+        fields = ("id", "user","office_bearer","club_history","club_acheivements")
+        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}, 'club_acheivements': {'required': False}}
+
+class GetFootballClubSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer()
+    office_bearer = FootballClubOfficeBearerSerializer(many=True, read_only=True)
+    club_history = FootballClubHistorySerializer(many=True, read_only=True)
+    club_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # player_current_club_inside = PlayerSerializer(many=True, read_only=True)
+    # coach_current_club_inside = FootballCoachSerializer(many=True, read_only=True)
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballClub
+        fields = ("id", "user","office_bearer","club_history","club_acheivements")
+        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}, 'club_acheivements': {'required': False}}
 
 class AgentInsideSerializer(serializers.ModelSerializer):
 
@@ -384,7 +399,7 @@ class PostLikesSerializer(serializers.ModelSerializer):
         fields = ("id", "user", "posted", "post_id")
 
 class GetPostLikesSerializer(serializers.ModelSerializer):
-    user=CustomUserSerializer()
+    user=UserSerializer()
 
     class Meta:
         ordering = ['-id']
@@ -430,7 +445,7 @@ class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = News
-        fields = ("id", "user", "posted", "title", "content", "picture")
+        fields = ("id", "user", "posted", "title", "content", "picture", "start_date", "end_date")
 
 class GetNewsSerializer(serializers.ModelSerializer):
     user=CustomUserSerializer()
@@ -438,4 +453,4 @@ class GetNewsSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = News
-        fields = ("id", "user", "posted", "title", "content", "picture")
+        fields = ("id", "user", "posted", "title", "content", "picture", "start_date", "end_date")

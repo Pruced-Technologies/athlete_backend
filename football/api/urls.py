@@ -34,7 +34,9 @@ router.register(r'networkrequest/:pk/request_list', MyNetworkRequestViewSet, bas
 router.register(r'networkconnect', NetworkConnectedViewSet, basename='networkconnect')
 router.register(r'networkconnect/:pk/request_list', NetworkConnectedViewSet, basename='networkconnectpk')
 router.register(r'networkconnections', NetworkConnectionsViewSet, basename='networkconnections')
-router.register(r'footballclub', FootballClubViewSet, basename='footballclub')
+router.register(r'instituition', FootballClubViewSet, basename='instituition')
+router.register(r'instituitionhistory', FootballClubHistoryViewSet, basename='instituitionhistory')
+router.register(r'instituitionofficebearer', FootballClubOfficeBearerViewSet, basename='instituitionofficebearer')
 router.register(r'referenceinside', ReferenceViewSet, basename='referenceinside')
 router.register(r'referenceoutside', ReferenceOutsideViewSet, basename='referenceoutside')
 router.register(r'agentoutside', AgentOutsideViewSet, basename='agentoutside')
@@ -48,6 +50,8 @@ router.register(r'getallcomments', GetAllPostCommentsListViewSet, basename='geta
 router.register(r'postitem', PostItemsViewSet, basename='postitem')
 router.register(r'getpostitem', GetPostItemsViewSet, basename='getpostitem')
 router.register(r'news', NewsViewSet, basename='news')
+router.register(r'newsall', NewsAllViewSet, basename='newsall')
+router.register(r'newsall/:pk/request_list', NewsAllViewSet, basename='newsallpk')
 router.register(r'getnews', GetNewsViewSet, basename='getnews')
 
 urlpatterns = [
@@ -57,6 +61,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('search/player', PlayerSearchViewSet.as_view(), name='search_player'),
     path('search/coach', CoachSearchViewSet.as_view(), name='search_coach'),
+    path('search/agent', AgentSearchViewSet.as_view(), name='search_agent'),
+    path('search/instituition', ClubSearchViewSet.as_view(), name='search_instituition'),
     path('send/mail', Sendmail.as_view(), name='send_mail'),
     path('get/comments/<slug:slug>/<int:limit>/', GetPostCommentsViewSet.as_view(), name='get_comments'),
     path('connectrequest/<int:id>/', views.networkConnect),

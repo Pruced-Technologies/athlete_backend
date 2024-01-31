@@ -57,6 +57,7 @@ class ProfileDescription(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100,null=True,blank=True)
     description = models.TextField(null=True, blank=True)
+    profile_type = models.CharField(max_length=50,null=True,blank=True)
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='profile_description', blank=True, null=True)
 
     def __str__(self):
@@ -69,13 +70,13 @@ class ProfilePhoto(models.Model):
 
 class Address(models.Model):
     id = models.AutoField(primary_key=True)
-    address_lane = models.CharField(max_length=255)
-    landmark = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    pin = models.IntegerField()
-    state = models.CharField(max_length=100)
-    country = models.CharField(max_length=100)
-    address_type = models.CharField(max_length=50)
+    address_lane = models.CharField(max_length=255,null=True,blank=True)
+    landmark = models.CharField(max_length=255,null=True,blank=True)
+    city = models.CharField(max_length=100,null=True,blank=True)
+    pin = models.IntegerField(null=True,blank=True)
+    state = models.CharField(max_length=100,null=True,blank=True)
+    country = models.CharField(max_length=100,null=True,blank=True)
+    address_type = models.CharField(max_length=50,null=True,blank=True)
     is_active = models.BooleanField(
         ("active"),
         default=True,
@@ -93,24 +94,21 @@ class Address(models.Model):
 class FootballClub(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club', null=True, blank=True)
-    founded_in = models.DateField(null=True,blank=True)
-    # player_id = models.ManyToManyField(Player, related_name='player_current_club_inside', blank=True)
-    # coach_id = models.ManyToManyField(FootballCoach, related_name='coach_current_club_inside', blank=True)
+    # founded_in = models.DateField(null=True,blank=True)
 
     def __str__(self):
-        # return self.user.email
-        return "%s %s" % (self.user.email, self.founded_in)
+        return self.user.email
     
 class Player(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player', blank=True, null=True)
     primary_position = models.CharField(max_length=25,blank=True,null=True)
     secondary_position = models.CharField(max_length=25,blank=True,null=True)
-    top_speed = models.IntegerField(blank=True,null=True)
+    top_speed = models.IntegerField(blank=True,null=True,default=0)
     preferred_foot = models.CharField(max_length=10,blank=True,null=True)
     injury_history = models.TextField(null=True,blank=True)
     current_club_outside = models.TextField(null=True, blank=True)
-    current_club_inside = models.IntegerField(null=True, blank=True)
+    current_club_inside = models.IntegerField(null=True, blank=True, default=0)
     current_club_inside_name = models.TextField(null=True, blank=True)
     # current_club_inside = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='player_club', null=True, blank=True)
     # agent_inside = models.ManyToManyField(Agent, related_name='agent_info_inside', blank=True)
@@ -229,17 +227,18 @@ class FootballClubHistory(models.Model):
     points = models.IntegerField(null=True, blank=True)
     position = models.CharField(max_length=100,null=True, blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
+    # club_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
 
     def __str__(self):
         # return self.acheivement_name
         return "%s %s" % (self.league_name, self.period)
     
-
 class FootballClubOfficeBearer(models.Model):
     id = models.AutoField(primary_key=True)
     position = models.CharField(max_length=100,null=True, blank=True)
     name = models.CharField(max_length=255,null=True, blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='office_bearer',null=True, blank=True)
+    # club_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='office_bearer',null=True, blank=True)
 
     def __str__(self):
         return "%s %s" % (self.name, self.position)
@@ -250,6 +249,7 @@ class Acheivements(models.Model):
     period = models.CharField(max_length=25,null=True, blank=True)
     player_id = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='player_acheivements', blank=True, null=True)
     coach_id = models.ForeignKey(FootballCoach, on_delete=models.CASCADE, related_name='coach_acheivements', blank=True, null=True)
+    club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='club_acheivements', blank=True, null=True)
 
     def __str__(self):
         # return self.acheivement_name
@@ -373,6 +373,8 @@ class News(models.Model):
     title = models.CharField(max_length=255,null=True,blank=True)
     content = models.TextField(null=True,blank=True)
     picture = models.ImageField(upload_to="event",null=True,blank=True)
+    start_date = models.DateField(null=True,blank=True)
+    end_date = models.DateField(null=True,blank=True)
     # readers = models.ManyToManyField(CustomUser, blank=True)
 
     def __str__(self):
