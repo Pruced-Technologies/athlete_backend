@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'chat',
     'channels',
     'django_filters',
+    'django_rest_passwordreset',
 ]
 
 REST_FRAMEWORK = {
@@ -113,7 +114,7 @@ AUTH_USER_MODEL = 'football.CustomUser'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR, 'templates/',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -167,9 +168,18 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'OPTIONS': {
+            'user_attributes': (
+                'username', 'email', 'first_name', 'last_name'
+            ),
+            'max_similarity': 0.7
+        },
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        },
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView, status
-from .serializers import UserSerializer,PlayerSerializer,GetPlayerSerializer,ClubSerializer,FootballCoachSerializer,SportProfileTypeSerializer,AddressSerializer,ProfilePhotoSerializer,AcheivementsSerializer,PlayerVideoClipSerializer,ProfileDescriptionSerializer,PlayerCareerHistorySerializer,FootballCoachCareerHistorySerializer,FootballTournamentsSerializer,MyNetworkRequestSerializer, GetMyNetworkRequestSerializer, NetworkConnectedSerializer,NetworkConnectionsSerializer,FootballClubSerializer,FootballClubHistorySerializer,FootballClubOfficeBearerSerializer,ReferenceSerializer, ReferenceOutsideSerializer,AgentInsideSerializer,AgentOutsideSerializer,GetAgentInsideSerializer, VerifyRequestSerializer, GetVerifyRequestSerializer, GetFootballCoachSerializer, PostCommentsSerializer, PostItemSerializer, GetPostItemSerializer, PostLikesSerializer, GetPostCommentsSerializer, NewsSerializer, GetNewsSerializer, GetFootballClubSerializer
-from football.models import Club,Player,CustomUser,FootballCoach,SportProfileType,Address,ProfilePhoto,Acheivements,PlayerVideoClip,ProfileDescription,PlayerCareerHistory,FootballCoachCareerHistory,FootballTournaments,MyNetworkRequest,NetworkConnected,FootballClub, FootballClubHistory,FootballClubOfficeBearer,Reference,ReferenceOutside,Agent,AgentOutside, VerifyRequest, PostItem, PostComments, PostLikes, News
+from .serializers import *
+from football.models import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,8 +14,14 @@ from rest_framework.generics import ListAPIView
 from django_filters import rest_framework as filters
 from django.db import models
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.utils import timezone
+from .emails import *
+from django.dispatch import receiver
+from django.template.loader import render_to_string
+from django.urls import reverse
+
+from django_rest_passwordreset.signals import reset_password_token_created
 
 # Create your views here.
 
@@ -30,11 +36,16 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         # ...
 
+        print(token)
+        print(user.email)
+        send_token_via_email(user.email,token)
         return token
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
+    # print(serializer_class.data)
+
 
 @api_view(['GET'])
 def getRoutes(request):
@@ -511,3 +522,73 @@ class NewsViewSet(viewsets.ModelViewSet):
 #     serializer_class = GetNewsSerializer
 #     filter_backends = [filters.DjangoFilterBackend]
 #     filter_class = NewsFilter
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    if request.method == 'POST':
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            if user.check_password(serializer.data.get('old_password')):
+                user.set_password(serializer.data.get('new_password'))
+                user.save()
+                # update_session_auth_hash(request, user)  # To update session after password change
+                return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@receiver(reset_password_token_created)
+def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
+    """
+    Handles password reset tokens
+    When a token is created, an e-mail needs to be sent to the user
+    :param sender: View Class that sent the signal
+    :param instance: View Instance that sent the signal
+    :param reset_password_token: Token Model Object
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    # send an e-mail to the user
+    # context = {
+    #     'current_user': reset_password_token.user,
+    #     'username': reset_password_token.user.username,
+    #     'email': reset_password_token.user.email,
+    #     'reset_password_url': "{}?token={}".format(
+    #         instance.request.build_absolute_uri(reverse('password_reset:reset-password-confirm')),
+    #         reset_password_token.key)
+    # }
+
+    # render email text
+    # email_html_message = render_to_string('email/password_reset_email.html', context)
+    # email_plaintext_message = render_to_string('email/password_reset_email.txt', context)
+
+    # msg = EmailMultiAlternatives(
+    #     # title:
+    #     "Password Reset for {title}".format(title="Scouting"),
+    #     # message:
+    #     email_plaintext_message,
+    #     # from:
+    #     "athletescouting@gmail.com",
+    #     # to:
+    #     [reset_password_token.user.email]
+    # )
+    # msg.attach_alternative(email_html_message, "text/html")
+    # msg.send()
+
+    # email_plaintext_message = "{}?token={}".format(
+    #     instance.request.build_absolute_uri(reverse('password_reset:reset-password-confirm')), 
+    #     reset_password_token.key)
+
+    send_mail(
+        # title:
+        "Password Reset for {title}".format(title="Scouting"),
+        # message:
+        # email_plaintext_message,
+        "Your token is {token}".format(token=reset_password_token.key),
+        # from:
+        "athletescouting@gmail.com",
+        # to:
+        [reset_password_token.user.email]
+    )

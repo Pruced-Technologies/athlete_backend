@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes, News
+import django.contrib.auth.password_validation as validators
+from django.core.exceptions import ValidationError
 
 class NetworkConnectionsSerializer(serializers.ModelSerializer):
     # connect_to_user = ConnectUserSerializer()
@@ -349,6 +351,17 @@ class UserSerializer(serializers.ModelSerializer):
             'club': {'required': False}
         }
 
+    # def validate_password(self, data):
+    #     validators.validate_password(password=data, user=CustomUser)
+    #     return data
+        
+    def validate_password(self, value):
+        try:
+            validators.validate_password(value)
+        except ValidationError as exc:
+            raise serializers.ValidationError({'password': exc.messages})
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         instance = self.Meta.model(**validated_data)
@@ -454,3 +467,10 @@ class GetNewsSerializer(serializers.ModelSerializer):
         ordering = ['-id']
         model = News
         fields = ("id", "user", "posted", "title", "content", "picture", "start_date", "end_date")
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+class ResetPasswordEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)

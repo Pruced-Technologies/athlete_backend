@@ -7,8 +7,9 @@ from .views import *
 from rest_framework import routers
 
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
+    # TokenObtainPairView,
     TokenRefreshView,
+    TokenVerifyView
 )
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -59,6 +60,7 @@ urlpatterns = [
     path('register/', registerView.as_view(), name='register'),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('search/player', PlayerSearchViewSet.as_view(), name='search_player'),
     path('search/coach', CoachSearchViewSet.as_view(), name='search_coach'),
     path('search/agent', AgentSearchViewSet.as_view(), name='search_agent'),
@@ -66,6 +68,8 @@ urlpatterns = [
     path('send/mail', Sendmail.as_view(), name='send_mail'),
     path('get/comments/<slug:slug>/<int:limit>/', GetPostCommentsViewSet.as_view(), name='get_comments'),
     path('connectrequest/<int:id>/', views.networkConnect),
+    path('changepassword/', change_password, name='change_password'),
+    path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
