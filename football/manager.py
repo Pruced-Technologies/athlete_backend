@@ -3,7 +3,7 @@ from django.contrib.auth.base_user import BaseUserManager
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
-    def create_user(self, email, password = None, **extra_fields):
+    def create_user(self, email, password = None, password2=None, **extra_fields):
         
         # if not extra_fields['email']:
         #     raise ValueError("Email is required")
@@ -33,4 +33,4 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff to True')
         
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(email, password, password2=None, **extra_fields)

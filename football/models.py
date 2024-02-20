@@ -34,6 +34,8 @@ class CustomUser(AbstractUser):
     profile_photo = models.ImageField(upload_to="profile",null=True,blank=True)
     profile_photo_url = models.TextField(blank=True,null=True)
     citizenship = models.CharField(max_length=100,blank=True,null=True)
+    # password2 = models.CharField(max_length=100,blank=True,null=True)
+    # is_open_for_hiring = models.BooleanField(null=True,blank=True)
 
     objects = UserManager()
 
@@ -102,14 +104,17 @@ class FootballClub(models.Model):
 class Player(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player', blank=True, null=True)
-    primary_position = models.CharField(max_length=25,blank=True,null=True)
-    secondary_position = models.CharField(max_length=25,blank=True,null=True)
-    top_speed = models.IntegerField(blank=True,null=True,default=0)
-    preferred_foot = models.CharField(max_length=10,blank=True,null=True)
-    injury_history = models.TextField(null=True,blank=True)
+    primary_position = models.CharField(max_length=100, blank=True, null=True)
+    secondary_position = models.CharField(max_length=100, blank=True, null=True)
+    top_speed = models.IntegerField(blank=True, null=True, default=0)
+    preferred_foot = models.CharField(max_length=10, blank=True, null=True)
+    injury_history = models.TextField(null=True, blank=True)
     current_club_outside = models.TextField(null=True, blank=True)
     current_club_inside = models.IntegerField(null=True, blank=True, default=0)
     current_club_inside_name = models.TextField(null=True, blank=True)
+    current_club = models.TextField(null=True, blank=True)
+    is_open_for_hiring = models.BooleanField(null=True, blank=True)
+    my_worth = models.FloatField(null=True, blank=True)
     # current_club_inside = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='player_club', null=True, blank=True)
     # agent_inside = models.ManyToManyField(Agent, related_name='agent_info_inside', blank=True)
     # reference_inside = models.ManyToManyField(Reference, related_name='reference_info_inside', blank=True)
@@ -183,6 +188,8 @@ class FootballCoach(models.Model):
     current_team_id = models.IntegerField(null=True, blank=True)
     # current_club_inside = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='coach_club', null=True, blank=True)
     # acheivements = models.ManyToManyField(Acheivements, blank=True)
+    is_open_for_hiring = models.BooleanField(null=True,blank=True)
+    my_worth = models.FloatField(null=True,blank=True)
 
     def __str__(self):
         return self.user.email

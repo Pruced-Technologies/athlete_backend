@@ -198,7 +198,7 @@ class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = Player
-        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside","current_club_inside_name","current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside")
+        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside","current_club_inside_name","current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside", "current_club", "is_open_for_hiring", "my_worth")
         extra_kwargs = {'club': {'required': False}, 'carreer_history': {'required': False}, 'player_acheivements': {'required': False}, 'agent_inside': {'required': False}, 'reference_users_inside': {'required': False}, 'agent_outside': {'required': False}, 'reference_users_outside': {'required': False}}
 
 class GetPlayerSerializer(serializers.ModelSerializer):
@@ -217,7 +217,7 @@ class GetPlayerSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = Player
-        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside", "current_club_inside_name", "current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside")
+        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside", "current_club_inside_name", "current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside", "current_club", "is_open_for_hiring", "my_worth")
         extra_kwargs = {'club': {'required': False}, 'carreer_history': {'required': False}, 'player_acheivements': {'required': False}, 'agent_inside': {'required': False}, 'reference_users_inside': {'required': False}, 'agent_outside': {'required': False}, 'reference_users_outside': {'required': False}}
 
 class FootballTournamentsSerializer(serializers.ModelSerializer):
@@ -247,7 +247,7 @@ class FootballCoachSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballCoach
-        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements")
+        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements","is_open_for_hiring","my_worth")
         extra_kwargs = {'carreer_history': {'required': False}, 'tournaments_name_won_as_coach': {'required': False}, 'coach_acheivements': {'required': False}}
 
 class GetFootballCoachSerializer(serializers.ModelSerializer):
@@ -261,7 +261,7 @@ class GetFootballCoachSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballCoach
-        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements")
+        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements","is_open_for_hiring","my_worth")
         extra_kwargs = {'carreer_history': {'required': False}, 'tournaments_name_won_as_coach': {'required': False}, 'coach_acheivements': {'required': False}}
 
 class ConnectUserSerializer(serializers.ModelSerializer):
@@ -334,6 +334,7 @@ class UserSerializer(serializers.ModelSerializer):
     # reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
     # agent_inside = AgentInsideSerializer(many=True, read_only=True)
     # agent_outside = AgentOutsideSerializer(many=True, read_only=True)
+    password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
 
     class Meta(object):
         model = CustomUser 
@@ -350,6 +351,14 @@ class UserSerializer(serializers.ModelSerializer):
             'connected_users': {'required': False},
             'club': {'required': False}
         }
+        
+    # Validating Password and Confirm Password while Registration
+    def validate(self, attrs):
+        password = attrs.get('password')
+        password2 = attrs.get('password2')
+        if password != password2:
+            raise serializers.ValidationError("Password and Confirm Password doesn't match")
+        return attrs
 
     # def validate_password(self, data):
     #     validators.validate_password(password=data, user=CustomUser)
@@ -362,13 +371,16 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': exc.messages})
         return value
 
-    def create(self, validated_data):
-        password = validated_data.pop('password', None)
-        instance = self.Meta.model(**validated_data)
-        if password is not None:
-            instance.set_password(password)
-        instance.save()
-        return instance
+    # def create(self, validated_data):
+    #     password = validated_data.pop('password', None)
+    #     instance = self.Meta.model(**validated_data)
+    #     if password is not None:
+    #         instance.set_password(password)
+    #     instance.save()
+    #     return instance
+    
+    def create(self, validate_data):
+        return CustomUser.objects.create_user(**validate_data)
     
 class GetMyNetworkRequestSerializer(serializers.ModelSerializer):
     from_user = UserSerializer()

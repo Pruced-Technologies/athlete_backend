@@ -36,9 +36,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         # ...
 
-        print(token)
-        print(user.email)
-        send_token_via_email(user.email,token)
+        # print(token)
+        # print(user.email)
+        # send_token_via_email(user.email,token)
         return token
 
 
