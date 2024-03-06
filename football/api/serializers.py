@@ -56,6 +56,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     sport_profile_type = SportProfileTypeSerializer(many=True, read_only=True)
     profile_description = ProfileDescriptionSerializer(many=True, read_only=True)
     connected_users = NetworkConnectionsSerializer(many=True, read_only=True)
+    age = serializers.SerializerMethodField()
 
     class Meta(object):
         model = CustomUser 
@@ -65,6 +66,9 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'sport_profile_type' : {'required': False},
             'profile_description' : {'required': False}
         }
+        
+    def get_age(self, obj):
+        return obj.calculate_age()
 
 class ClubSerializer(serializers.ModelSerializer):
 
@@ -335,6 +339,7 @@ class UserSerializer(serializers.ModelSerializer):
     # agent_inside = AgentInsideSerializer(many=True, read_only=True)
     # agent_outside = AgentOutsideSerializer(many=True, read_only=True)
     password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
+    age = serializers.SerializerMethodField()
 
     class Meta(object):
         model = CustomUser 
@@ -349,8 +354,12 @@ class UserSerializer(serializers.ModelSerializer):
             'player': {'required': False},
             'coach': {'required': False},
             'connected_users': {'required': False},
-            'club': {'required': False}
+            'club': {'required': False},
+            'age': {'required': False}
         }
+        
+    def get_age(self, obj):
+        return obj.calculate_age()
         
     # Validating Password and Confirm Password while Registration
     def validate(self, attrs):

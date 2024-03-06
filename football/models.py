@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from datetime import date
 from .manager import UserManager
 import uuid
+# import datetime
 # from django.contrib.auth import get_user_model
 # User = get_user_model()
 
@@ -36,6 +37,13 @@ class CustomUser(AbstractUser):
     citizenship = models.CharField(max_length=100,blank=True,null=True)
     # password2 = models.CharField(max_length=100,blank=True,null=True)
     # is_open_for_hiring = models.BooleanField(null=True,blank=True)
+    
+    def calculate_age(self):
+        if self.dob:
+            today = date.today()
+            age = today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
+            return age
+        return None
 
     objects = UserManager()
 

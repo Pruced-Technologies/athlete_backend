@@ -12,6 +12,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import ListAPIView
 from django_filters import rest_framework as filters
+from django_filters import FilterSet, AllValuesFilter, NumberFilter, CharFilter
 from django.db import models
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
@@ -20,6 +21,7 @@ from .emails import *
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+import datetime
 
 from django_rest_passwordreset.signals import reset_password_token_created
 
@@ -34,6 +36,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
         token['username'] = user.username
+        token['sport_type'] = user.sport_type
         # ...
 
         # print(token)
@@ -350,19 +353,75 @@ class VerifyRequestViewSet(viewsets.ModelViewSet):
        return Response(user_list_json.data)
     
 
+# class PlayerFilter(filters.FilterSet):
+
+#     class Meta:
+#         model = Player
+#         # fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
+#         # filter_overrides = {
+#         #     models.CharField: {
+#         #         'filter_class': filters.CharFilter,
+#         #         'extra': lambda f: {
+#         #             'lookup_expr': 'icontains',
+#         #         },
+#         #     },
+#         # }
+#         fields = {
+#             'user__citizenship': ['exact', 'contains'],
+#             'primary_position': ['exact', 'contains'],
+#             'secondary_position': ['exact', 'contains'],
+#             'preferred_foot': ['exact', 'contains'],
+#             'preferred_foot': ['exact', 'contains'],
+#             'current_club': ['exact', 'contains'],
+#         }
+
+
 class PlayerFilter(filters.FilterSet):
+    user__min_height = NumberFilter(field_name='user__height', lookup_expr='gte')
+    user__max_height = NumberFilter(field_name='user__height', lookup_expr='lte')
+    user__min_weight = NumberFilter(field_name='user__weight', lookup_expr='gte')
+    user__max_weight = NumberFilter(field_name='user__weight', lookup_expr='lte')
+    min_top_speed = NumberFilter(field_name='top_speed', lookup_expr='gte')
+    max_top_speed = NumberFilter(field_name='top_speed', lookup_expr='lte')
+    primary_position = AllValuesFilter(field_name='primary_position')
+    secondary_position = AllValuesFilter(field_name='secondary_position')
+    preferred_foot = AllValuesFilter(field_name='preferred_foot')
+    current_club = AllValuesFilter(field_name='current_club')
+    user__citizenship = AllValuesFilter(field_name='user__citizenship')
+    user__dob = filters.DateFromToRangeFilter(field_name='user__dob')
+    # age = NumberFilter(method='filter_by_age')
+    # user__min_age = NumberFilter(field_name='user__dob', lookup_expr='year__gte')
+    # user__max_age = NumberFilter(field_name='user__dob', lookup_expr='year__lte')
 
     class Meta:
         model = Player
-        fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
-        filter_overrides = {
-            models.CharField: {
-                'filter_class': filters.CharFilter,
-                'extra': lambda f: {
-                    'lookup_expr': 'icontains',
-                },
-            },
-        }
+        fields = (
+            'user__min_height',
+            'user__max_height',
+            'user__min_weight',
+            'user__max_weight',
+            'min_top_speed',
+            'max_top_speed',
+            'primary_position',
+            'secondary_position',
+            'preferred_foot',
+            'current_club',
+            'user__citizenship',
+            'user__dob',
+        )
+        
+    # def filter_by_age(self, qs, name, value):
+    #     if value:
+    #         today = timezone.now().date()
+    #         min_age = today - datetime.timedelta(days=int(value[1]) * 365)
+    #         max_age = today - datetime.timedelta(days=int(value[0]) * 365)
+    #         qs = qs.filter(user__dob__range=(min_age, max_age))
+    #     return qs
+        
+    # def filter_by_age(self, queryset, name, value):
+    #     today = date.today()
+    #     age = today.year - models.F('user__dob__year')
+    #     return queryset.filter(age=age)
     
 class PlayerSearchViewSet(ListAPIView):
     queryset = Player.objects.all()
@@ -370,20 +429,59 @@ class PlayerSearchViewSet(ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlayerFilter
 
+# class CoachFilter(filters.FilterSet):
+
+#     class Meta:
+#         model = FootballCoach
+#         fields = ['user__first_name', 'user__last_name', 'current_team']
+#         filter_overrides = {
+#             models.CharField: {
+#                 'filter_class': filters.CharFilter,
+#                 'extra': lambda f: {
+#                     'lookup_expr': 'icontains',
+#                 },
+#             },
+#         }
+
+
 class CoachFilter(filters.FilterSet):
+    user__min_height = NumberFilter(field_name='user__height', lookup_expr='gte')
+    user__max_height = NumberFilter(field_name='user__height', lookup_expr='lte')
+    user__min_weight = NumberFilter(field_name='user__weight', lookup_expr='gte')
+    user__max_weight = NumberFilter(field_name='user__weight', lookup_expr='lte')
+    user__citizenship = AllValuesFilter(field_name='user__citizenship')
+    user__dob = filters.DateFromToRangeFilter(field_name='user__dob')
+    current_team = AllValuesFilter(field_name='current_team')
+    from_date = NumberFilter(field_name='from_date', lookup_expr='gte')
+    to_date = NumberFilter(field_name='to_date', lookup_expr='lte')
+    min_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='gte')
+    max_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='lte')
+    min_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='gte')
+    max_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='lte')
+    min_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='gte')
+    max_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='lte')
 
     class Meta:
         model = FootballCoach
-        fields = ['user__first_name', 'user__last_name', 'current_team']
-        filter_overrides = {
-            models.CharField: {
-                'filter_class': filters.CharFilter,
-                'extra': lambda f: {
-                    'lookup_expr': 'icontains',
-                },
-            },
-        }
-
+        fields = (
+            'user__min_height',
+            'user__max_height',
+            'user__min_weight',
+            'user__max_weight',
+            'user__citizenship',
+            'user__dob',
+            'current_team',
+            'from_date',
+            'to_date',
+            'min_playoffs_games_coached_in',
+            'max_playoffs_games_coached_in',
+            'min_playoffs_games_won',
+            'max_playoffs_games_won',
+            'min_playoffs_games_lost',
+            'max_playoffs_games_lost',
+        )
+        
+        
 class CoachSearchViewSet(ListAPIView):
     queryset = FootballCoach.objects.all()
     serializer_class = GetFootballCoachSerializer
