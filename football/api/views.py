@@ -10,7 +10,7 @@ from football.models import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, UpdateAPIView
 from django_filters import rest_framework as filters
 from django_filters import FilterSet, AllValuesFilter, NumberFilter, CharFilter
 from django.db import models
@@ -21,7 +21,7 @@ from .emails import *
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
-import datetime
+# import datetime
 
 from django_rest_passwordreset.signals import reset_password_token_created
 
@@ -68,9 +68,6 @@ class registerView(APIView):
         return Response(serializer.data)
     
 class UserViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     # filter_backends = [filters.OrderingFilter]
@@ -78,9 +75,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 class SportProfileTypeViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = SportProfileType.objects.all()
     serializer_class = SportProfileTypeSerializer
 
@@ -93,99 +87,55 @@ class SportProfileTypeViewSet(viewsets.ModelViewSet):
        return Response(user_list_json.data)
 
 class AddressViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
 
-class PlayerAcheivementsViewSet(viewsets.ModelViewSet):
-    """
-    List all acheivements, or create a new acheivement.
-    """
-    queryset = Acheivements.objects.all()
-    serializer_class = AcheivementsSerializer
+# class PlayerAcheivementsViewSet(viewsets.ModelViewSet):
+#     queryset = Acheivements.objects.all()
+#     serializer_class = AcheivementsSerializer
 
 class VideoClipViewSet(viewsets.ModelViewSet):
-    """
-    List all acheivements, or create a new acheivement.
-    """
     queryset = PlayerVideoClip.objects.all()
     serializer_class = PlayerVideoClipSerializer
 
 class ProfileDescriptionViewSet(viewsets.ModelViewSet):
-    """
-    List all profile description, or create a new description.
-    """
     queryset = ProfileDescription.objects.all()
     serializer_class = ProfileDescriptionSerializer
+    
+# class PersonalAchievementsViewSet(viewsets.ModelViewSet):
+#     queryset = PersonalAchievements.objects.all()
+#     serializer_class = PersonalAchievementsSerializer
 
-class PlayerCareerHistoryViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
-    queryset = PlayerCareerHistory.objects.all()
-    serializer_class = PlayerCareerHistorySerializer
+# class PlayerCareerHistoryViewSet(viewsets.ModelViewSet):
+#     queryset = PlayerCareerHistory.objects.all()
+#     serializer_class = PlayerCareerHistorySerializer
     
 class ProfilePhotoViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = ProfilePhoto.objects.all()
     serializer_class = ProfilePhotoSerializer
 
 class ClubViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
     
 
 class PlayerViewSet(viewsets.ModelViewSet):
-    """
-    List all workers, or create a new worker.
-    """
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
     # filter_backends = [filters.OrderingFilter]
     # authentication_classes = [JWTAuthentication]
     # permission_classes = [IsAuthenticated]
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def player(request, pk = None):
-#     if request.method == 'GET':
-#         id = pk
-#         if id is not None:
-#             football_player = Player.objects.get(user = id)
-#             football_player_serializer = PlayerSerializer(football_player)
-#             return Response(football_player_serializer.data)   
-    
-#         user = request.user
-#         print(user)
-#         football_player = Player.objects.all()
-#         football_player_serializer = PlayerSerializer(football_player, many=True)
-#         return Response(football_player_serializer.data)
     
 class FootballCoachViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballCoach.objects.all()
     serializer_class = FootballCoachSerializer
 
 class FootballCoachCareerHistoryViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballCoachCareerHistory.objects.all()
     serializer_class = FootballCoachCareerHistorySerializer
 
 class FootballTournamentViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballTournaments.objects.all()
     serializer_class = FootballTournamentsSerializer
 
@@ -201,21 +151,7 @@ class MyNetworkRequestViewSet(viewsets.ModelViewSet):
     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
        user_list_json = GetMyNetworkRequestSerializer(users, many=True)
        return Response(user_list_json.data)
-
-# @api_view(['GET'])
-# def networkRequest(request, username = None):
-#     if request.method == 'GET':
-#         id = username
-#         if id is not None:
-#             touser = MyNetworkRequest.objects.get(to_user = id)
-#             touser_serializer = MyNetworkRequestSerializer(touser, many=True)
-#             return Response(touser_serializer.data)   
-    
-#         user = request.user
-#         print(user)
-#         touser = MyNetworkRequest.objects.all()
-#         touser_serializer = MyNetworkRequestSerializer(touser, many=True)
-#         return Response(touser_serializer.data)
+   
     
 @api_view(['PATCH'])
 def networkConnect(request, id):
@@ -284,60 +220,36 @@ class NetworkConnectionsViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, 
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         
 class FootballClubViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballClub.objects.all()
     serializer_class = FootballClubSerializer
 
 class FootballClubHistoryViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballClubHistory.objects.all()
     serializer_class = FootballClubHistorySerializer
 
 class FootballClubOfficeBearerViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
     queryset = FootballClubOfficeBearer.objects.all()
     serializer_class = FootballClubOfficeBearerSerializer
 
-class ReferenceViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
-    queryset = Reference.objects.all()
-    serializer_class = ReferenceSerializer
+# class ReferenceViewSet(viewsets.ModelViewSet):
+#     queryset = Reference.objects.all()
+#     serializer_class = ReferenceSerializer
 
-class ReferenceOutsideViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
-    queryset = ReferenceOutside.objects.all()
-    serializer_class = ReferenceOutsideSerializer
+# class ReferenceOutsideViewSet(viewsets.ModelViewSet):
+#     queryset = ReferenceOutside.objects.all()
+#     serializer_class = ReferenceOutsideSerializer
 
-class AgentOutsideViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
-    queryset = AgentOutside.objects.all()
-    serializer_class = AgentOutsideSerializer
+# class AgentOutsideViewSet(viewsets.ModelViewSet):
+#     queryset = AgentOutside.objects.all()
+#     serializer_class = AgentOutsideSerializer
 
-class AgentInsideViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
+class AgentViewSet(viewsets.ModelViewSet):
     queryset = Agent.objects.all()
-    serializer_class = AgentInsideSerializer
+    serializer_class = AgentSerializer
 
-class GetAgentInsideViewSet(viewsets.ModelViewSet):
-    """
-    List all workkers, or create a new worker.
-    """
+class GetAgentViewSet(viewsets.ModelViewSet):
     queryset = Agent.objects.all()
-    serializer_class = GetAgentInsideSerializer
+    serializer_class = AgentSerializer
 
 class VerifyRequestViewSet(viewsets.ModelViewSet):
     
@@ -351,29 +263,6 @@ class VerifyRequestViewSet(viewsets.ModelViewSet):
     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
        user_list_json = GetVerifyRequestSerializer(users, many=True)
        return Response(user_list_json.data)
-    
-
-# class PlayerFilter(filters.FilterSet):
-
-#     class Meta:
-#         model = Player
-#         # fields = ['user__first_name', 'user__last_name', 'primary_position', 'secondary_position', 'top_speed', 'preferred_foot', 'current_club_inside_name']
-#         # filter_overrides = {
-#         #     models.CharField: {
-#         #         'filter_class': filters.CharFilter,
-#         #         'extra': lambda f: {
-#         #             'lookup_expr': 'icontains',
-#         #         },
-#         #     },
-#         # }
-#         fields = {
-#             'user__citizenship': ['exact', 'contains'],
-#             'primary_position': ['exact', 'contains'],
-#             'secondary_position': ['exact', 'contains'],
-#             'preferred_foot': ['exact', 'contains'],
-#             'preferred_foot': ['exact', 'contains'],
-#             'current_club': ['exact', 'contains'],
-#         }
 
 
 class PlayerFilter(filters.FilterSet):
@@ -409,39 +298,12 @@ class PlayerFilter(filters.FilterSet):
             'user__citizenship',
             'user__dob',
         )
-        
-    # def filter_by_age(self, qs, name, value):
-    #     if value:
-    #         today = timezone.now().date()
-    #         min_age = today - datetime.timedelta(days=int(value[1]) * 365)
-    #         max_age = today - datetime.timedelta(days=int(value[0]) * 365)
-    #         qs = qs.filter(user__dob__range=(min_age, max_age))
-    #     return qs
-        
-    # def filter_by_age(self, queryset, name, value):
-    #     today = date.today()
-    #     age = today.year - models.F('user__dob__year')
-    #     return queryset.filter(age=age)
     
 class PlayerSearchViewSet(ListAPIView):
     queryset = Player.objects.all()
     serializer_class = GetPlayerSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlayerFilter
-
-# class CoachFilter(filters.FilterSet):
-
-#     class Meta:
-#         model = FootballCoach
-#         fields = ['user__first_name', 'user__last_name', 'current_team']
-#         filter_overrides = {
-#             models.CharField: {
-#                 'filter_class': filters.CharFilter,
-#                 'extra': lambda f: {
-#                     'lookup_expr': 'icontains',
-#                 },
-#             },
-#         }
 
 
 class CoachFilter(filters.FilterSet):
@@ -614,13 +476,6 @@ class NewsViewSet(viewsets.ModelViewSet):
     # filter_class = NewsFilter
 
 
-# class GetNewsViewSet(viewsets.ModelViewSet):
-    
-#     queryset = News.objects.all().order_by('-start_date')
-#     serializer_class = GetNewsSerializer
-#     filter_backends = [filters.DjangoFilterBackend]
-#     filter_class = NewsFilter
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_password(request):
@@ -690,3 +545,903 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         # to:
         [reset_password_token.user.email]
     )
+
+class PresentAddressUpdateView(APIView):
+    def post(self, request):
+        data = request.data
+        instances_to_update = []
+        for obj in data:
+            instance_id = obj.get('id')
+            try:
+                instance = Address.objects.get(id=instance_id)
+            except Address.DoesNotExist:
+                return Response(f"Instance with ID {instance_id} not found", status=404)
+            instances_to_update.append((instance, obj))
+
+        updated_instances = []
+        for instance, obj in instances_to_update:
+            serializer = AddressSerializer(instance, data=obj, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                updated_instances.append(serializer.data)
+            else:
+                return Response(serializer.errors, status=400)
+        
+        return Response(updated_instances, status=200)
+    
+class TeamsViewSet(viewsets.ModelViewSet):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+    
+class LeaguesViewSet(viewsets.ModelViewSet):
+    # queryset = League.objects.filter(league_type='international').order_by('-league_name')
+    queryset = League.objects.all()
+    serializer_class = LeagueSerializer
+    
+class CountryViewSet(viewsets.ModelViewSet):
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
+    
+class MultiModelCreateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Assuming the request data contains a 'type' field indicating the model
+        data_type = request.data.get('flag')
+        # print(data_type)
+
+        if data_type == 'league':
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            # And so on...
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            # player_serializer = ClubSerializer(data=player_data)
+            # And so on...
+
+            # Validate the data for each model
+            # Validate the data for each model
+            if league_serializer.is_valid():
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['league_id'] = league_id    
+                coach_serializer = ClubSerializer(data=player_data)
+                if coach_serializer.is_valid():
+                    coach_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['coach_errors'] = coach_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        elif data_type == 'team':
+             # Get the data sent through HTTP POST
+            data = request.data
+            
+            if 'league_id' in data:
+                # If 'id' is present, it's an update operation
+                flag=1
+                league_id = data.get('league_id')
+                sport_type = data.get('sport_type')
+                print(league_id)
+                # league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+                my_object = League.objects.get(id=league_id)
+                print(my_object.sport_type)
+                substrings = my_object.sport_type.split(',')
+                print(f"Substrings are {substrings}")
+                for substring in substrings:
+                    print(f"Sport type: {sport_type} found in the list.")
+                    if(substring.lower() == sport_type.lower()):
+                        print(f"Substring: {substring} found in the list.")
+                        flag = 0
+                if(flag == 1):
+                    my_object.sport_type = my_object.sport_type + "," + sport_type
+                    print(my_object.sport_type)
+                    my_object.save()
+
+            # Separate the data based on the models
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            # And so on...
+
+            # Serialize the data for each model
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid():
+                team_instance = team_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['club_id'] = team_id    
+                player_serializer = ClubSerializer(data=player_data)
+                if player_serializer.is_valid():
+                    player_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['player_errors'] = player_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+               
+                return Response(errors, status=400)
+        
+        elif data_type == 'teamleague':
+             # Get the data sent through HTTP POST
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid() and league_serializer.is_valid():
+                team_instance = team_serializer.save()
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['club_id'] = team_id    
+                player_data['league_id'] = league_id    
+                player_serializer = ClubSerializer(data=player_data)
+                if player_serializer.is_valid():
+                    player_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['player_errors'] = player_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        else:
+            return Response({"error": "Invalid data type provided"}, status=400)
+        
+
+class MultiModelCreateUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if 'id' is present in request data
+        if 'league_id' in request.data:
+            # If 'id' is present, it's an update operation
+            flag=1
+            data = request.data
+            league_id = data.get('league_id')
+            sport_type = data.get('sport_type')
+            print(league_id)
+            my_object = League.objects.get(id=league_id)
+            print(my_object.sport_type)
+            substrings = my_object.sport_type.split(',')
+            print(f"Substrings are {substrings}")
+            for substring in substrings:
+                print(f"Sport type: {sport_type} found in the list.")
+                if(substring.lower() == sport_type.lower()):
+                    print(f"Substring: {substring} found in the list.")
+                    flag = 0
+            if(flag == 1):
+                my_object.sport_type = my_object.sport_type + "," + sport_type
+                print(my_object.sport_type)
+                my_object.save()
+            return self.create(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            return self.create(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+       
+        serializer = ClubSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        
+        return Response(serializer.errors, status=400)
+    
+class PlayerLeagueModelUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        value = request.data.get('league_id')
+        # Check if 'id' is present in request data
+        if value != '':
+            # If 'id' is present, it's an update operation
+            flag=1
+            data = request.data
+            league_id = data.get('league_id')
+            sport_type = data.get('sport_type')
+            print(league_id)
+            my_object = League.objects.get(id=league_id)
+            print(my_object.sport_type)
+            # Split the string into multiple substrings based on comma
+            substrings = my_object.sport_type.split(',')
+            print(f"Substrings are {substrings}")
+            for substring in substrings:
+                print(f"Sport type: {sport_type} found in the list.")
+                if(substring.lower() == sport_type.lower()):
+                    print(f"Substring: {substring} found in the list.")
+                    flag = 0
+            if(flag == 1):
+                my_object.sport_type = my_object.sport_type + "," + sport_type
+                print(my_object.sport_type)
+                my_object.save()
+            return self.update(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            return self.update(request, *args, **kwargs)
+            # return Response({"No data found"}, status=400)
+
+    def update(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = Club.objects.get(pk=instance_id)
+        except Club.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+
+        # Update the instance
+        serializer = ClubSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+class PlayerTeamLeagueModelUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Assuming the request data contains a 'type' field indicating the model
+        data_type = request.data.get('flag')
+        # print(data_type)
+
+        if data_type == 'league':
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            # And so on...
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+
+            # Validate the data for each model
+            if league_serializer.is_valid():
+                # Perform any additional processing or actions as needed
+                # For example, save the data to the respective models
+                league_serializer.save()
+    
+                # Get the instance to update
+                instance_id = request.data.get('id')  # Remove 'id' from data
+                try:
+                    instance = Club.objects.get(pk=instance_id)
+                except Club.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = ClubSerializer(instance, data=player_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+        
+                return Response(errors, status=400)
+            
+        elif data_type == 'team':
+             # Get the data sent through HTTP POST
+            data = request.data
+            
+            if 'league_id' in data:
+                # If 'id' is present, it's an update operation
+                flag=1
+                league_id = data.get('league_id')
+                sport_type = data.get('sport_type')
+                print(league_id)
+                my_object = League.objects.get(id=league_id)
+                print(my_object.sport_type)
+                substrings = my_object.sport_type.split(',')
+                print(f"Substrings are {substrings}")
+                for substring in substrings:
+                    print(f"Sport type: {sport_type} found in the list.")
+                    if(substring.lower() == sport_type.lower()):
+                        print(f"Substring: {substring} found in the list.")
+                        flag = 0
+                if(flag == 1):
+                    my_object.sport_type = my_object.sport_type + "," + sport_type
+                    print(my_object.sport_type)
+                    my_object.save()
+
+            # Separate the data based on the models
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            # And so on...
+
+            # Serialize the data for each model
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid():
+                team_instance = team_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['club_id'] = team_id   
+                instance_id = data.get('id')  # Remove 'id' from data
+                try:
+                    instance = Club.objects.get(pk=instance_id)
+                except Club.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = ClubSerializer(instance, data=player_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+               
+                return Response(errors, status=400)
+        
+        elif data_type == 'teamleague':
+             # Get the data sent through HTTP POST
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid() and league_serializer.is_valid():
+                team_instance = team_serializer.save()
+                league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['club_id'] = team_id    
+                instance_id = data.get('id')  # Remove 'id' from data
+                try:
+                    instance = Club.objects.get(pk=instance_id)
+                except Club.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = ClubSerializer(instance, data=player_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        else:
+            return Response({"error": "Invalid data type provided"}, status=400)
+        
+class SportLicenseViewSet(viewsets.ModelViewSet):
+    queryset = SportLicense.objects.all()
+    serializer_class = SportLicenseSerializer
+    
+class FootballCoachUpdateModelAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if 'id' is present in request data
+        if 'license_id' in request.data:
+            # If 'id' is present, it's an update operation
+            return self.update(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            return self.create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = FootballCoach.objects.get(pk=instance_id)
+        except FootballCoach.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+
+        # Update the instance
+        serializer = FootballCoachSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        
+        # Separate the data based on the models
+        license_data = {key: data[key] for key in ['license_name']}
+        coach_data = {key: data[key] for key in ['id', 'user', 'license_name', 'certificate']}
+        # And so on...
+
+        # Serialize the data for each model
+        license_serializer = SportLicenseSerializer(data=license_data)
+
+        # Validate the data for each model
+        if license_serializer.is_valid():
+            # Perform any additional processing or actions as needed
+            # For example, save the data to the respective models
+            license_serializer.save()
+    
+            # Get the instance to update
+            instance_id = request.data.get('id')  # Remove 'id' from data
+            try:
+                instance = FootballCoach.objects.get(pk=instance_id)
+            except FootballCoach.DoesNotExist:
+                return Response({"error": "Instance does not exist"}, status=404)
+
+            # Update the instance
+            serializer = FootballCoachSerializer(instance, data=coach_data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        else:
+            # If any serializer data is invalid, return errors
+            errors = {}
+            if not license_serializer.is_valid():
+                errors['license_errors'] = license_serializer.errors
+        
+            return Response(errors, status=400)
+        
+class CoachCareerHistoryModelCreateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Assuming the request data contains a 'type' field indicating the model
+        data_type = request.data.get('flag')
+        # print(data_type)
+
+        if data_type == 'league':
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            # And so on...
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            # coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
+            # And so on...
+
+            # Validate the data for each model
+            if league_serializer.is_valid():
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['league_id'] = league_id    
+                coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
+                if coach_serializer.is_valid():
+                    coach_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['coach_errors'] = coach_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        elif data_type == 'team':
+             # Get the data sent through HTTP POST
+            data = request.data
+            
+            if 'league_id' in data:
+                # If 'id' is present, it's an update operation
+                flag=1
+                league_id = data.get('league_id')
+                sport_type = data.get('sport_type')
+                print(league_id)
+                # league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+                my_object = League.objects.get(id=league_id)
+                print(my_object.sport_type)
+                substrings = my_object.sport_type.split(',')
+                print(f"Substrings are {substrings}")
+                for substring in substrings:
+                    print(f"Sport type: {sport_type} found in the list.")
+                    if(substring.lower() == sport_type.lower()):
+                        print(f"Substring: {substring} found in the list.")
+                        flag = 0
+                if(flag == 1):
+                    my_object.sport_type = my_object.sport_type + "," + sport_type
+                    print(my_object.sport_type)
+                    my_object.save()
+
+            # Separate the data based on the models
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            # And so on...
+
+            # Serialize the data for each model
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid():
+                team_instance = team_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['club_id'] = team_id    
+                coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
+                if coach_serializer.is_valid():
+                    coach_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['coach_errors'] = coach_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+               
+                return Response(errors, status=400)
+        
+        elif data_type == 'teamleague':
+             # Get the data sent through HTTP POST
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid() and league_serializer.is_valid():
+                team_instance = team_serializer.save()
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['club_id'] = team_id    
+                coach_data['league_id'] = league_id    
+                coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
+                if coach_serializer.is_valid():
+                    coach_serializer.save()
+        
+                    # Return any relevant data or success message
+                    return Response({"message": "Data saved successfully"}, status=201)
+                else:
+                    errors = {}
+                    errors['coach_errors'] = coach_serializer.errors
+                    
+                    return Response(errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        else:
+            return Response({"error": "Invalid data type provided"}, status=400)
+        
+class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if 'id' is present in request data
+        if 'league_id' in request.data:
+            # If 'id' is present, it's an update operation
+            flag=1
+            data = request.data
+            league_id = data.get('league_id')
+            sport_type = data.get('sport_type')
+            print(league_id)
+            my_object = League.objects.get(id=league_id)
+            print(my_object.sport_type)
+            substrings = my_object.sport_type.split(',')
+            print(f"Substrings are {substrings}")
+            for substring in substrings:
+                print(f"Sport type: {sport_type} found in the list.")
+                if(substring.lower() == sport_type.lower()):
+                    print(f"Substring: {substring} found in the list.")
+                    flag = 0
+            if(flag == 1):
+                my_object.sport_type = my_object.sport_type + "," + sport_type
+                print(my_object.sport_type)
+                my_object.save()
+            return self.create(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            return self.create(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+       
+        serializer = FootballCoachCareerHistorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        
+        return Response(serializer.errors, status=400)
+    
+
+class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if 'id' is present in request data
+        value = request.data.get('league_id')
+        
+        if value != '':
+            # If 'id' is present, it's an update operation
+            flag=1
+            data = request.data
+            league_id = data.get('league_id')
+            sport_type = data.get('sport_type')
+            print(league_id)
+            my_object = League.objects.get(id=league_id)
+            print(my_object.sport_type)
+            # Split the string into multiple substrings based on comma
+            substrings = my_object.sport_type.split(',')
+            print(f"Substrings are {substrings}")
+            for substring in substrings:
+                print(f"Sport type: {sport_type} found in the list.")
+                if(substring.lower() == sport_type.lower()):
+                    print(f"Substring: {substring} found in the list.")
+                    flag = 0
+            if(flag == 1):
+                my_object.sport_type = my_object.sport_type + "," + sport_type
+                print(my_object.sport_type)
+                my_object.save()
+            return self.update(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            return self.update(request, *args, **kwargs)
+            # return Response({"No data found"}, status=400)
+
+    def update(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = FootballCoachCareerHistory.objects.get(pk=instance_id)
+        except FootballCoachCareerHistory.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+
+        # Update the instance
+        serializer = FootballCoachCareerHistorySerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Assuming the request data contains a 'type' field indicating the model
+        data_type = request.data.get('flag')
+        # print(data_type)
+
+        if data_type == 'league':
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            # And so on...
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+
+            # Validate the data for each model
+            if league_serializer.is_valid():
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['league_id'] = league_id
+    
+                # Get the instance to update
+                instance_id = data.get('id')  # Remove 'id' from data
+                try:
+                    instance = FootballCoachCareerHistory.objects.get(pk=instance_id)
+                except FootballCoachCareerHistory.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+        
+                return Response(errors, status=400)
+            
+        elif data_type == 'team':
+             # Get the data sent through HTTP POST
+            data = request.data
+            
+            if 'league_id' in data:
+                # If 'id' is present, it's an update operation
+                flag=1
+                league_id = data.get('league_id')
+                sport_type = data.get('sport_type')
+                print(league_id)
+                my_object = League.objects.get(id=league_id)
+                print(my_object.sport_type)
+                substrings = my_object.sport_type.split(',')
+                print(f"Substrings are {substrings}")
+                for substring in substrings:
+                    print(f"Sport type: {sport_type} found in the list.")
+                    if(substring.lower() == sport_type.lower()):
+                        print(f"Substring: {substring} found in the list.")
+                        flag = 0
+                if(flag == 1):
+                    my_object.sport_type = my_object.sport_type + "," + sport_type
+                    print(my_object.sport_type)
+                    my_object.save()
+
+            # Separate the data based on the models
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            # And so on...
+
+            # Serialize the data for each model
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid():
+                team_instance = team_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['club_id'] = team_id   
+                instance_id = data.get('id')  # Remove 'id' from data
+                try:
+                    instance = FootballCoachCareerHistory.objects.get(pk=instance_id)
+                except FootballCoachCareerHistory.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+               
+                return Response(errors, status=400)
+        
+        elif data_type == 'teamleague':
+             # Get the data sent through HTTP POST
+            data = request.data
+
+            # Separate the data based on the models
+            league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
+            team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+
+            # Serialize the data for each model
+            league_serializer = LeagueSerializer(data=league_data)
+            team_serializer = TeamSerializer(data=team_data)
+
+            # Validate the data for each model
+            if team_serializer.is_valid() and league_serializer.is_valid():
+                team_instance = team_serializer.save()
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                team_id = team_instance.id
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                coach_data['club_id'] = team_id    
+                coach_data['league_id'] = league_id    
+                instance_id = data.get('id')  # Remove 'id' from data
+                try:
+                    instance = FootballCoachCareerHistory.objects.get(pk=instance_id)
+                except FootballCoachCareerHistory.DoesNotExist:
+                    return Response({"error": "Instance does not exist"}, status=404)
+
+                # Update the instance
+                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                return Response(serializer.errors, status=400)
+            else:
+                # If any serializer data is invalid, return errors
+                errors = {}
+                if not team_serializer.is_valid():
+                    errors['team_errors'] = team_serializer.errors
+                if not league_serializer.is_valid():
+                    errors['league_errors'] = league_serializer.errors
+               
+                return Response(errors, status=400)
+            
+        else:
+            return Response({"error": "Invalid data type provided"}, status=400)
+        

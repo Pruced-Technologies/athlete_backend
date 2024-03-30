@@ -1,7 +1,37 @@
 from rest_framework import serializers
-from football.models import Address, CustomUser, Club, Player, ProfilePhoto, PlayerVideoClip, PlayerCareerHistory, SportProfileType, FootballCoachCareerHistory, FootballCoach, FootballTournaments, Acheivements,ProfileDescription, MyNetworkRequest, NetworkConnected, FootballClub, FootballClubHistory, FootballClubOfficeBearer, Reference, ReferenceOutside, Agent, AgentOutside, VerifyRequest, PostComments, PostItem, PostLikes, News
+from football.models import *
 import django.contrib.auth.password_validation as validators
 from django.core.exceptions import ValidationError
+
+class SportTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        ordering = ['-id']
+        model = Type
+        fields = ("id", "sport_type")
+
+class TeamSerializer(serializers.ModelSerializer):
+    # sport_type = SportTypeSerializer(many=True, read_only=True)
+    
+    class Meta:
+        ordering = ['-id']
+        model = Team
+        # fields = ("id", "team_name", "reg_id", "country_name", "sport_type", "league_id")
+        fields = ("id", "club_name", "reg_id", "country_name", "sport_type")
+        
+class LeagueSerializer(serializers.ModelSerializer):
+    # teams = TeamSerializer(many=True, read_only=True)
+
+    class Meta:
+        ordering = ['-id']
+        model = League
+        fields = ("id", "sport_type", "league_name", "league_type")
+        
+class CountrySerializer(serializers.ModelSerializer):
+    # leagues = LeagueSerializer(many=True, read_only=True)
+    class Meta:
+        ordering = ['-id']
+        model = Country
+        fields = ("id", "country_name")
 
 class NetworkConnectionsSerializer(serializers.ModelSerializer):
     # connect_to_user = ConnectUserSerializer()
@@ -20,6 +50,14 @@ class ProfilePhotoSerializer(serializers.ModelSerializer):
         fields = ("id", "photo", "user_id")
         extra_kwargs = {'user_id': {'required': False}}
 
+# class PersonalAchievementsSerializer(serializers.ModelSerializer):
+
+#     class Meta:
+#         ordering = ['-id']
+#         model = PersonalAchievements
+#         fields = ("id", "achievement_name", "period", "profile_type", "user_id")
+#         extra_kwargs = {'user_id': {'required': False}}
+        
 class SportProfileTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -54,6 +92,7 @@ class ProfileDescriptionSerializer(serializers.ModelSerializer):
 
 class CustomUserSerializer(serializers.ModelSerializer):
     sport_profile_type = SportProfileTypeSerializer(many=True, read_only=True)
+    # personal_achievements = PersonalAchievementsSerializer(many=True, read_only=True)
     profile_description = ProfileDescriptionSerializer(many=True, read_only=True)
     connected_users = NetworkConnectionsSerializer(many=True, read_only=True)
     age = serializers.SerializerMethodField()
@@ -75,24 +114,24 @@ class ClubSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = Club
-        fields = ("id", "club_id", "club_name", "period", "games_played", "club_goals", "club_assists", "club_passes", "club_saved_goals", "interceptions_per_game", "takles_per_game", "shots_per_game", "key_passes_per_game", "dribles_completed_per_game", "clean_sheets_per_game", "club_yellow_card", "club_red_card", "players", "league","type", "status","remarks")
+        fields = '__all__'
         extra_kwargs = {'players': {'required': False}}
     
-class PlayerCareerHistorySerializer(serializers.ModelSerializer):
+# class PlayerCareerHistorySerializer(serializers.ModelSerializer):
 
-    class Meta:
-        ordering = ['-id']
-        model = PlayerCareerHistory
-        fields = ("id", "debut_date", "last_date", "league_name", "club_name", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+#     class Meta:
+#         ordering = ['-id']
+#         model = PlayerCareerHistory
+#         fields = ("id", "debut_date", "last_date", "league_name", "club_name", "player_id")
+#         extra_kwargs = {'player_id': {'required': False}}
 
-class AcheivementsSerializer(serializers.ModelSerializer):
+# class AcheivementsSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        ordering = ['-id']
-        model = Acheivements
-        fields = ("id", "acheivement_name", "period", "player_id", "coach_id", "club_id")
-        extra_kwargs = {'player_id': {'required': False}, 'coach_id': {'required': False}, 'club_id':  {'required': False}}
+#     class Meta:
+#         ordering = ['-id']
+#         model = Acheivements
+#         fields = ("id", "acheivement_name", "period", "player_id", "coach_id", "club_id")
+#         extra_kwargs = {'player_id': {'required': False}, 'coach_id': {'required': False}, 'club_id':  {'required': False}}
 
 class FootballClubOfficeBearerSerializer(serializers.ModelSerializer):
 
@@ -114,115 +153,113 @@ class FootballClubSerializer(serializers.ModelSerializer):
     # user = ClubUserSerializer()
     office_bearer = FootballClubOfficeBearerSerializer(many=True, read_only=True)
     club_history = FootballClubHistorySerializer(many=True, read_only=True)
-    club_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # club_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = PlayerSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballCoachSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = FootballClub
-        fields = ("id", "user","office_bearer","club_history","club_acheivements")
-        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}, 'club_acheivements': {'required': False}}
+        fields = ("id", "user","office_bearer","club_history")
+        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}}
 
 class GetFootballClubSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     office_bearer = FootballClubOfficeBearerSerializer(many=True, read_only=True)
     club_history = FootballClubHistorySerializer(many=True, read_only=True)
-    club_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # club_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = PlayerSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballCoachSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = FootballClub
-        fields = ("id", "user","office_bearer","club_history","club_acheivements")
-        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}, 'club_acheivements': {'required': False}}
+        fields = ("id", "user","office_bearer","club_history")
+        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}}
 
-class AgentInsideSerializer(serializers.ModelSerializer):
+class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         ordering = ['-id']
         model = Agent
-        fields = ("id", "user", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+        fields = "__all__"
 
-class GetAgentInsideSerializer(serializers.ModelSerializer):
+class GetAgentSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     class Meta:
         ordering = ['-id']
         model = Agent
-        fields = ("id", "user", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+        fields = "__all__"
 
-class AgentOutsideSerializer(serializers.ModelSerializer):
+# class AgentOutsideSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        ordering = ['-id']
-        model = AgentOutside
-        fields = ("id", "agent_name", "contact", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+#     class Meta:
+#         ordering = ['-id']
+#         model = AgentOutside
+#         fields = ("id", "agent_name", "contact", "player_id")
+#         extra_kwargs = {'player_id': {'required': False}}
 
-class GetReferenceSerializer(serializers.ModelSerializer):
-    reffered_user = CustomUserSerializer()
-    class Meta:
-        ordering = ['-id']
-        model = Reference
-        fields = ("id", "reffered_user", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+# class GetReferenceSerializer(serializers.ModelSerializer):
+#     reffered_user = CustomUserSerializer()
+#     class Meta:
+#         ordering = ['-id']
+#         model = Reference
+#         fields = ("id", "reffered_user", "player_id")
+#         extra_kwargs = {'player_id': {'required': False}}
 
-class ReferenceSerializer(serializers.ModelSerializer):
+# class ReferenceSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        ordering = ['-id']
-        model = Reference
-        fields = ("id", "reffered_user", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+#     class Meta:
+#         ordering = ['-id']
+#         model = Reference
+#         fields = ("id", "reffered_user", "player_id")
+#         extra_kwargs = {'player_id': {'required': False}}
 
-class ReferenceOutsideSerializer(serializers.ModelSerializer):
+# class ReferenceOutsideSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        ordering = ['-id']
-        model = ReferenceOutside
-        fields = ("id", "reference_name", "contact", "player_id")
-        extra_kwargs = {'player_id': {'required': False}}
+#     class Meta:
+#         ordering = ['-id']
+#         model = ReferenceOutside
+#         fields = ("id", "reference_name", "contact", "player_id")
+#         extra_kwargs = {'player_id': {'required': False}}
 
 class PlayerSerializer(serializers.ModelSerializer):
     # user = UserSerializer()
     club = ClubSerializer(many=True, read_only=True)
     # current_club_inside = FootballClubSerializer()
     # video_clip = PlayerVideoClipSerializer(many=True, read_only=True)
-    carreer_history = PlayerCareerHistorySerializer(many=True, read_only=True)
-    player_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # carreer_history = PlayerCareerHistorySerializer(many=True, read_only=True)
+    # player_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = FootballClubSerializer(many=True, read_only=True)
-    agent_inside = GetAgentInsideSerializer(many=True, read_only=True)
-    agent_outside = AgentOutsideSerializer(many=True, read_only=True)
-    reference_users_inside = GetReferenceSerializer(many=True, read_only=True)
-    reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
+    # agent_inside = GetAgentInsideSerializer(many=True, read_only=True)
+    # agent_outside = AgentOutsideSerializer(many=True, read_only=True)
+    # reference_users_inside = GetReferenceSerializer(many=True, read_only=True)
+    # reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = Player
-        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside","current_club_inside_name","current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside", "current_club", "is_open_for_hiring", "my_worth")
-        extra_kwargs = {'club': {'required': False}, 'carreer_history': {'required': False}, 'player_acheivements': {'required': False}, 'agent_inside': {'required': False}, 'reference_users_inside': {'required': False}, 'agent_outside': {'required': False}, 'reference_users_outside': {'required': False}}
+        fields = "__all__"
+        extra_kwargs = {'club': {'required': False}}
 
 class GetPlayerSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     club = ClubSerializer(many=True, read_only=True)
     # current_club_inside = FootballClubSerializer()
     # video_clip = PlayerVideoClipSerializer(many=True, read_only=True)
-    carreer_history = PlayerCareerHistorySerializer(many=True, read_only=True)
-    player_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # carreer_history = PlayerCareerHistorySerializer(many=True, read_only=True)
+    # player_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = FootballClubSerializer(many=True, read_only=True)
-    agent_inside = GetAgentInsideSerializer(many=True, read_only=True)
-    agent_outside = AgentOutsideSerializer(many=True, read_only=True)
-    reference_users_inside = GetReferenceSerializer(many=True, read_only=True)
-    reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
+    # agent_inside = GetAgentInsideSerializer(many=True, read_only=True)
+    # agent_outside = AgentOutsideSerializer(many=True, read_only=True)
+    # reference_users_inside = GetReferenceSerializer(many=True, read_only=True)
+    # reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = Player
-        fields = ("id", "user","primary_position","secondary_position","top_speed", "preferred_foot", "injury_history", "club", "carreer_history", "player_acheivements", "current_club_inside", "current_club_inside_name", "current_club_outside","agent_inside", "agent_outside", "reference_users_inside", "reference_users_outside", "current_club", "is_open_for_hiring", "my_worth")
-        extra_kwargs = {'club': {'required': False}, 'carreer_history': {'required': False}, 'player_acheivements': {'required': False}, 'agent_inside': {'required': False}, 'reference_users_inside': {'required': False}, 'agent_outside': {'required': False}, 'reference_users_outside': {'required': False}}
+        fields = "__all__"
+        extra_kwargs = {'club': {'required': False}}
 
 class FootballTournamentsSerializer(serializers.ModelSerializer):
 
@@ -238,39 +275,40 @@ class FootballCoachCareerHistorySerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballCoachCareerHistory
-        fields = ("id", "period", "club_id", "club_name", "league", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "type", "status", "remarks", "coach_id")
+        fields = '__all__'
         extra_kwargs = {'coach_id': {'required': False}}
 
 class FootballCoachSerializer(serializers.ModelSerializer):
     carreer_history = FootballCoachCareerHistorySerializer(many=True, read_only=True)
-    tournaments_name_won_as_coach = FootballTournamentsSerializer(many=True, read_only=True)
-    coach_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # tournaments_name_won_as_coach = FootballTournamentsSerializer(many=True, read_only=True)
+    # coach_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballClubSerializer(many=True, read_only=True)
     # current_club_inside = FootballClubSerializer()
 
     class Meta:
         ordering = ['-id']
         model = FootballCoach
-        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements","is_open_for_hiring","my_worth")
-        extra_kwargs = {'carreer_history': {'required': False}, 'tournaments_name_won_as_coach': {'required': False}, 'coach_acheivements': {'required': False}}
+        fields = '__all__'
+        extra_kwargs = {'carreer_history': {'required': False}}
 
 class GetFootballCoachSerializer(serializers.ModelSerializer):
     user= CustomUserSerializer()
     carreer_history = FootballCoachCareerHistorySerializer(many=True, read_only=True)
-    tournaments_name_won_as_coach = FootballTournamentsSerializer(many=True, read_only=True)
-    coach_acheivements = AcheivementsSerializer(many=True, read_only=True)
+    # tournaments_name_won_as_coach = FootballTournamentsSerializer(many=True, read_only=True)
+    # coach_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballClubSerializer(many=True, read_only=True)
     # current_club_inside = FootballClubSerializer()
 
     class Meta:
         ordering = ['-id']
         model = FootballCoach
-        fields = ("id", "user", "carreer_history", "from_date", "to_date", "playoffs_games_coached_in", "playoffs_games_won", "playoffs_games_lost", "total_no_tournaments_won_as_coach", "tournaments_name_won_as_coach", "current_team", "current_team_id", "coach_acheivements","is_open_for_hiring","my_worth")
-        extra_kwargs = {'carreer_history': {'required': False}, 'tournaments_name_won_as_coach': {'required': False}, 'coach_acheivements': {'required': False}}
+        fields = '__all__'
+        extra_kwargs = {'carreer_history': {'required': False}}
 
 class ConnectUserSerializer(serializers.ModelSerializer):
     profile_image = ProfilePhotoSerializer(many=True, read_only=True)
     sport_profile_type = SportProfileTypeSerializer(many=True, read_only=True)
+    # personal_achievements = PersonalAchievementsSerializer(many=True, read_only=True)
     permanent_address = AddressSerializer(many=True, read_only=True)
     present_address = AddressSerializer(many=True, read_only=True)
     video_clip = PlayerVideoClipSerializer(many=True, read_only=True)
@@ -278,6 +316,7 @@ class ConnectUserSerializer(serializers.ModelSerializer):
     player = PlayerSerializer(many=True, read_only=True)
     coach = FootballCoachSerializer(many=True, read_only=True)
     club = FootballClubSerializer(many=True, read_only=True)
+    agent = AgentSerializer(many=True, read_only=True)
     # connected_users = NetworkConnectedSerializer(many=True, read_only=True)
 
     class Meta(object):
@@ -293,6 +332,7 @@ class ConnectUserSerializer(serializers.ModelSerializer):
             'player': {'required': False},
             'coach': {'required': False},
             'club': {'required': False},
+            'agent': {'required': False},
         }
 
 class NetworkConnectedSerializer(serializers.ModelSerializer):
@@ -326,6 +366,7 @@ class NetworkConnectedSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     profile_image = ProfilePhotoSerializer(many=True, read_only=True)
     sport_profile_type = SportProfileTypeSerializer(many=True, read_only=True)
+    # personal_achievements = PersonalAchievementsSerializer(many=True, read_only=True)
     permanent_address = AddressSerializer(many=True, read_only=True)
     present_address = AddressSerializer(many=True, read_only=True)
     video_clip = PlayerVideoClipSerializer(many=True, read_only=True)
@@ -336,7 +377,7 @@ class UserSerializer(serializers.ModelSerializer):
     club = FootballClubSerializer(many=True, read_only=True)
     # reference_users_inside = ReferenceSerializer(many=True, read_only=True)
     # reference_users_outside = ReferenceOutsideSerializer(many=True, read_only=True)
-    # agent_inside = AgentInsideSerializer(many=True, read_only=True)
+    agent = AgentSerializer(many=True, read_only=True)
     # agent_outside = AgentOutsideSerializer(many=True, read_only=True)
     password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
     age = serializers.SerializerMethodField()
@@ -353,6 +394,7 @@ class UserSerializer(serializers.ModelSerializer):
             'profile_desc': {'required': False},
             'player': {'required': False},
             'coach': {'required': False},
+            'agent': {'required': False},
             'connected_users': {'required': False},
             'club': {'required': False},
             'age': {'required': False}
@@ -495,3 +537,9 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+    
+class SportLicenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        ordering = ['-id']
+        model = SportLicense
+        fields = ("id", "license_name")
