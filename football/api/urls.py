@@ -59,6 +59,9 @@ router.register(r'teams', TeamsViewSet, basename='teams')
 router.register(r'leagues', LeaguesViewSet, basename='leagues')
 router.register(r'country', CountryViewSet, basename='country')
 router.register(r'sportlicense', SportLicenseViewSet, basename='sportlicense')
+router.register(r'coachlicense', CoachLicenseViewSet, basename='coachlicense')
+router.register(r'agentlicense', AgentLicenseViewSet, basename='agentlicense')
+router.register(r'agentcareerhistory', AgentCareerHistoryViewSet, basename='agentcareerhistory')
 
 urlpatterns = [
     # path('', views.getRoutes),
@@ -80,11 +83,16 @@ urlpatterns = [
     path('playerhistorycreate/', MultiModelCreateUpdateAPIView.as_view(), name='playerhistorycreate'),
     path('playerhistoryleagueupdate/', PlayerLeagueModelUpdateAPIView.as_view(), name='playerhistoryleagueupdate'),
     path('playerhistoryteamleagueupdate/', PlayerTeamLeagueModelUpdateAPIView.as_view(), name='playerhistoryteamleagueupdate'),
-    path('footballcoachupdate/', FootballCoachUpdateModelAPIView.as_view(), name='footballcoachupdate'),
+    # path('footballcoachupdate/', FootballCoachUpdateModelAPIView.as_view(), name='footballcoachupdate'),
+    path('footballcoachlicensecreate/', FootballCoachLicenseCreateModelAPIView.as_view(), name='footballcoachlicensecreate'),
+    path('footballcoachlicenseupdate/', FootballCoachLicenseUpdateModelAPIView.as_view(), name='footballcoachlicenseupdate'),
     path('footballcoachcareerhistorycreate/', CoachCareerHistoryModelCreateAPIView.as_view(), name='footballcoachcareerhistorycreate'),
     path('footballcoachcareerhistoryleaguecreate/', CoachCareerHistoryLeagueModelCreateUpdateAPIView.as_view(), name='footballcoachcareerhistoryleaguecreate'),
     path('footballcoachcareerhistoryteamandleagueupdate/', CoachCareerHistoryTeamAndLeagueModelUpdateAPIView.as_view(), name='footballcoachcareerhistoryteamandleagueupdate'),
     path('footballcoachcareerhistoryandleagueupdate/', CoachCareerHistoryAndLeagueModelUpdateAPIView.as_view(), name='footballcoachcareerhistoryandleagueupdate'),
+    # path('footballagent/', FootballAgentUpdateModelAPIView.as_view(), name='footballagent'),
+    path('footballagentlicensecreate/', FootballAgentLicenseCreateModelAPIView.as_view(), name='footballagentlicensecreate'),
+    path('footballagentlicenseupdate/', FootballAgentLicenseUpdateModelAPIView.as_view(), name='footballagentlicenseupdate'),
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

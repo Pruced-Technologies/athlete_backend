@@ -981,26 +981,231 @@ class SportLicenseViewSet(viewsets.ModelViewSet):
     queryset = SportLicense.objects.all()
     serializer_class = SportLicenseSerializer
     
-class FootballCoachUpdateModelAPIView(APIView):
+class CoachLicenseViewSet(viewsets.ModelViewSet):
+    queryset = CoachLicense.objects.all()
+    serializer_class = CoachLicenseSerializer
+    
+# class FootballCoachUpdateModelAPIView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         # Check if 'id' is present in request data
+#         if 'license_id' in request.data:
+#             # If 'id' is present, it's an update operation
+#             return self.update(request, *args, **kwargs)
+#         else:
+#             # If 'id' is not present, it's a create operation
+#             return self.create(request, *args, **kwargs)
+
+#     def update(self, request, *args, **kwargs):
+#         # Get the instance to update
+#         instance_id = request.data.get('id')  # Remove 'id' from data
+#         try:
+#             instance = FootballCoach.objects.get(pk=instance_id)
+#         except FootballCoach.DoesNotExist:
+#             return Response({"error": "Instance does not exist"}, status=404)
+
+#         # Update the instance
+#         serializer = FootballCoachSerializer(instance, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=200)
+#         return Response(serializer.errors, status=400)
+    
+#     def create(self, request, *args, **kwargs):
+#         data = request.data
+        
+#         # Separate the data based on the models
+#         license_data = {key: data[key] for key in ['license_name']}
+#         coach_data = {key: data[key] for key in ['id', 'user', 'license_name', 'certificate']}
+#         # And so on...
+
+#         # Serialize the data for each model
+#         license_serializer = SportLicenseSerializer(data=license_data)
+
+#         # Validate the data for each model
+#         if license_serializer.is_valid():
+#             # Perform any additional processing or actions as needed
+#             # For example, save the data to the respective models
+#             license_serializer.save()
+    
+#             # Get the instance to update
+#             instance_id = request.data.get('id')  # Remove 'id' from data
+#             try:
+#                 instance = FootballCoach.objects.get(pk=instance_id)
+#             except FootballCoach.DoesNotExist:
+#                 return Response({"error": "Instance does not exist"}, status=404)
+
+#             # Update the instance
+#             serializer = FootballCoachSerializer(instance, data=coach_data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data, status=200)
+#             return Response(serializer.errors, status=400)
+#         else:
+#             # If any serializer data is invalid, return errors
+#             errors = {}
+#             if not license_serializer.is_valid():
+#                 errors['license_errors'] = license_serializer.errors
+        
+#             return Response(errors, status=400)
+
+
+class FootballCoachLicenseCreateModelAPIView(APIView):
     def post(self, request, *args, **kwargs):
+        value = request.data.get('license_id')
         # Check if 'id' is present in request data
-        if 'license_id' in request.data:
+        if value != '':
+            # If 'id' is present, it's an update operation
+            # return self.update(request, *args, **kwargs)
+            serializer = CoachLicenseSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
+        else:
+            # If 'id' is not present, it's a create operation
+            if 'certificate' in request.data:
+                data = request.data
+        
+                # Separate the data based on the models
+                license_data = {key: data[key] for key in ['license_name']}
+                coach_data = {key: data[key] for key in ['license_id', 'license_name', 'certificate', 'coach']}
+                # And so on...
+
+                # Serialize the data for each model
+                license_serializer = SportLicenseSerializer(data=license_data)
+
+                # Validate the data for each model
+                if license_serializer.is_valid():
+                    license_instance = license_serializer.save()
+                        
+                    # Extract 'id' from model1_instance
+                    license_id = license_instance.id
+                        
+                    # Assign id to the appropriate field in Model2
+                    coach_data['license_id'] = license_id    
+                    coach_serializer = CoachLicenseSerializer(data=coach_data)
+                    if coach_serializer.is_valid():
+                        coach_serializer.save()
+                
+                        # Return any relevant data or success message
+                        return Response({"message": "Data saved successfully"}, status=201)
+                    else:
+                        errors = {}
+                        errors['coach_errors'] = coach_serializer.errors
+                            
+                        return Response(errors, status=400)
+                else:
+                    # If any serializer data is invalid, return errors
+                    errors = {}
+                    if not license_serializer.is_valid():
+                        errors['license_errors'] = license_serializer.errors
+                
+                    return Response(errors, status=400)
+            else:
+                return self.create(request, *args, **kwargs)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        
+        # Separate the data based on the models
+        license_data = {key: data[key] for key in ['license_name']}
+        coach_data = {key: data[key] for key in ['license_id', 'license_name', 'coach']}
+        # And so on...
+
+        # Serialize the data for each model
+        license_serializer = SportLicenseSerializer(data=license_data)
+
+        # Validate the data for each model
+        if license_serializer.is_valid():
+            license_instance = license_serializer.save()
+                
+            # Extract 'id' from model1_instance
+            license_id = license_instance.id
+                
+            # Assign id to the appropriate field in Model2
+            coach_data['license_id'] = license_id    
+            coach_serializer = CoachLicenseSerializer(data=coach_data)
+            if coach_serializer.is_valid():
+                coach_serializer.save()
+        
+                # Return any relevant data or success message
+                return Response({"message": "Data saved successfully"}, status=201)
+            else:
+                errors = {}
+                errors['coach_errors'] = coach_serializer.errors
+                    
+                return Response(errors, status=400)
+        else:
+            # If any serializer data is invalid, return errors
+            errors = {}
+            if not license_serializer.is_valid():
+                errors['license_errors'] = license_serializer.errors
+        
+            return Response(errors, status=400)
+
+class FootballCoachLicenseUpdateModelAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        value = request.data.get('license_id')
+        # Check if 'id' is present in request data
+        if value != '':
             # If 'id' is present, it's an update operation
             return self.update(request, *args, **kwargs)
         else:
             # If 'id' is not present, it's a create operation
-            return self.create(request, *args, **kwargs)
+            if 'certificate' in request.data:
+                data = request.data
+        
+                # Separate the data based on the models
+                license_data = {key: data[key] for key in ['license_name']}
+                coach_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'certificate', 'coach']}
+                # And so on...
+
+                # Serialize the data for each model
+                license_serializer = SportLicenseSerializer(data=license_data)
+
+                # Validate the data for each model
+                if license_serializer.is_valid():
+                    license_instance = license_serializer.save()
+                
+                    # Extract 'id' from model1_instance
+                    license_id = license_instance.id
+                        
+                    # Assign id to the appropriate field in Model2
+                    coach_data['license_id'] = license_id 
+            
+                    # Get the instance to update
+                    instance_id = request.data.get('id')  # Remove 'id' from data
+                    try:
+                        instance = CoachLicense.objects.get(pk=instance_id)
+                    except CoachLicense.DoesNotExist:
+                        return Response({"error": "Instance does not exist"}, status=404)
+
+                    # Update the instance
+                    serializer = CoachLicenseSerializer(instance, data=coach_data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data, status=200)
+                    return Response(serializer.errors, status=400)
+                else:
+                    # If any serializer data is invalid, return errors
+                    errors = {}
+                    if not license_serializer.is_valid():
+                        errors['license_errors'] = license_serializer.errors
+                
+                    return Response(errors, status=400)
+            else:
+                return self.create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
         # Get the instance to update
         instance_id = request.data.get('id')  # Remove 'id' from data
         try:
-            instance = FootballCoach.objects.get(pk=instance_id)
-        except FootballCoach.DoesNotExist:
+            instance = CoachLicense.objects.get(pk=instance_id)
+        except CoachLicense.DoesNotExist:
             return Response({"error": "Instance does not exist"}, status=404)
 
         # Update the instance
-        serializer = FootballCoachSerializer(instance, data=request.data)
+        serializer = CoachLicenseSerializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=200)
@@ -1011,7 +1216,7 @@ class FootballCoachUpdateModelAPIView(APIView):
         
         # Separate the data based on the models
         license_data = {key: data[key] for key in ['license_name']}
-        coach_data = {key: data[key] for key in ['id', 'user', 'license_name', 'certificate']}
+        coach_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'coach']}
         # And so on...
 
         # Serialize the data for each model
@@ -1019,19 +1224,23 @@ class FootballCoachUpdateModelAPIView(APIView):
 
         # Validate the data for each model
         if license_serializer.is_valid():
-            # Perform any additional processing or actions as needed
-            # For example, save the data to the respective models
-            license_serializer.save()
+            license_instance = license_serializer.save()
+                
+            # Extract 'id' from model1_instance
+            license_id = license_instance.id
+                
+            # Assign id to the appropriate field in Model2
+            coach_data['license_id'] = license_id 
     
             # Get the instance to update
             instance_id = request.data.get('id')  # Remove 'id' from data
             try:
-                instance = FootballCoach.objects.get(pk=instance_id)
-            except FootballCoach.DoesNotExist:
+                instance = CoachLicense.objects.get(pk=instance_id)
+            except CoachLicense.DoesNotExist:
                 return Response({"error": "Instance does not exist"}, status=404)
 
             # Update the instance
-            serializer = FootballCoachSerializer(instance, data=coach_data)
+            serializer = CoachLicenseSerializer(instance, data=coach_data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=200)
@@ -1445,3 +1654,278 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
         else:
             return Response({"error": "Invalid data type provided"}, status=400)
         
+# class FootballAgentUpdateModelAPIView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         # Check if 'id' is present in request data
+#         if 'license_id' in request.data:
+#             # If 'id' is present, it's an update operation
+#             print(request.data)
+#             return self.update(request, *args, **kwargs)
+#         else:
+#             # If 'id' is not present, it's a create operation
+#             return self.create(request, *args, **kwargs)
+
+#     def update(self, request, *args, **kwargs):
+#         # Get the instance to update
+#         instance_id = request.data.get('id')  # Remove 'id' from data
+#         try:
+#             instance = Agent.objects.get(pk=instance_id)
+#         except Agent.DoesNotExist:
+#             return Response({"error": "Instance does not exist"}, status=404)
+
+#         # Update the instance
+#         serializer = AgentSerializer(instance, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=200)
+#         return Response(serializer.errors, status=400)
+    
+#     def create(self, request, *args, **kwargs):
+#         data = request.data
+        
+#         # Separate the data based on the models
+#         license_data = {key: data[key] for key in ['license_name']}
+#         agent_data = {key: data[key] for key in ['id', 'user', 'license_name', 'certificate', 'country_name']}
+#         # And so on...
+
+#         # Serialize the data for each model
+#         license_serializer = SportLicenseSerializer(data=license_data)
+
+#         # Validate the data for each model
+#         if license_serializer.is_valid():
+#             # Perform any additional processing or actions as needed
+#             # For example, save the data to the respective models
+#             license_serializer.save()
+    
+#             # Get the instance to update
+#             instance_id = request.data.get('id')  # Remove 'id' from data
+#             try:
+#                 instance = Agent.objects.get(pk=instance_id)
+#             except Agent.DoesNotExist:
+#                 return Response({"error": "Instance does not exist"}, status=404)
+
+#             # Update the instance
+#             serializer = AgentSerializer(instance, data=agent_data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data, status=200)
+#             return Response(serializer.errors, status=400)
+#         else:
+#             # If any serializer data is invalid, return errors
+#             errors = {}
+#             if not license_serializer.is_valid():
+#                 errors['license_errors'] = license_serializer.errors
+        
+#             return Response(errors, status=400)
+
+class AgentLicenseViewSet(viewsets.ModelViewSet):
+    queryset = AgentLicense.objects.all()
+    serializer_class = AgentLicenseSerializer
+
+class FootballAgentLicenseCreateModelAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        value = request.data.get('license_id')
+        # Check if 'id' is present in request data
+        if value != '':
+            # If 'id' is present, it's an update operation
+            # return self.update(request, *args, **kwargs)
+            serializer = AgentLicenseSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
+        else:
+            # If 'id' is not present, it's a create operation
+            if 'certificate' in request.data:
+                data = request.data
+        
+                # Separate the data based on the models
+                license_data = {key: data[key] for key in ['license_name']}
+                agent_data = {key: data[key] for key in ['license_id', 'license_name', 'certificate', 'agent']}
+                # And so on...
+
+                # Serialize the data for each model
+                license_serializer = SportLicenseSerializer(data=license_data)
+
+                # Validate the data for each model
+                if license_serializer.is_valid():
+                    license_instance = license_serializer.save()
+                        
+                    # Extract 'id' from model1_instance
+                    license_id = license_instance.id
+                        
+                    # Assign id to the appropriate field in Model2
+                    agent_data['license_id'] = license_id    
+                    agent_serializer = AgentLicenseSerializer(data=agent_data)
+                    if agent_serializer.is_valid():
+                        agent_serializer.save()
+                
+                        # Return any relevant data or success message
+                        return Response({"message": "Data saved successfully"}, status=201)
+                    else:
+                        errors = {}
+                        errors['agent_errors'] = agent_serializer.errors
+                            
+                        return Response(errors, status=400)
+                else:
+                    # If any serializer data is invalid, return errors
+                    errors = {}
+                    if not license_serializer.is_valid():
+                        errors['license_errors'] = license_serializer.errors
+                
+                    return Response(errors, status=400)
+            else:
+                return self.create(request, *args, **kwargs)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        
+        # Separate the data based on the models
+        license_data = {key: data[key] for key in ['license_name']}
+        agent_data = {key: data[key] for key in ['license_id', 'license_name', 'agent']}
+        # And so on...
+
+        # Serialize the data for each model
+        license_serializer = SportLicenseSerializer(data=license_data)
+
+        # Validate the data for each model
+        if license_serializer.is_valid():
+            license_instance = license_serializer.save()
+                
+            # Extract 'id' from model1_instance
+            license_id = license_instance.id
+                
+            # Assign id to the appropriate field in Model2
+            agent_data['license_id'] = license_id    
+            agent_serializer = AgentLicenseSerializer(data=agent_data)
+            if agent_serializer.is_valid():
+                agent_serializer.save()
+        
+                # Return any relevant data or success message
+                return Response({"message": "Data saved successfully"}, status=201)
+            else:
+                errors = {}
+                errors['coach_errors'] = agent_serializer.errors
+                    
+                return Response(errors, status=400)
+        else:
+            # If any serializer data is invalid, return errors
+            errors = {}
+            if not license_serializer.is_valid():
+                errors['license_errors'] = license_serializer.errors
+        
+            return Response(errors, status=400)
+
+class FootballAgentLicenseUpdateModelAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        value = request.data.get('license_id')
+        # Check if 'id' is present in request data
+        if value != '':
+            # If 'id' is present, it's an update operation
+            return self.update(request, *args, **kwargs)
+        else:
+            # If 'id' is not present, it's a create operation
+            if 'certificate' in request.data:
+                data = request.data
+        
+                # Separate the data based on the models
+                license_data = {key: data[key] for key in ['license_name']}
+                agent_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'certificate', 'agent']}
+                # And so on...
+
+                # Serialize the data for each model
+                license_serializer = SportLicenseSerializer(data=license_data)
+
+                # Validate the data for each model
+                if license_serializer.is_valid():
+                    license_instance = license_serializer.save()
+                
+                    # Extract 'id' from model1_instance
+                    license_id = license_instance.id
+                        
+                    # Assign id to the appropriate field in Model2
+                    agent_data['license_id'] = license_id 
+            
+                    # Get the instance to update
+                    instance_id = request.data.get('id')  # Remove 'id' from data
+                    try:
+                        instance = AgentLicense.objects.get(pk=instance_id)
+                    except AgentLicense.DoesNotExist:
+                        return Response({"error": "Instance does not exist"}, status=404)
+
+                    # Update the instance
+                    serializer = AgentLicenseSerializer(instance, data=agent_data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data, status=200)
+                    return Response(serializer.errors, status=400)
+                else:
+                    # If any serializer data is invalid, return errors
+                    errors = {}
+                    if not license_serializer.is_valid():
+                        errors['license_errors'] = license_serializer.errors
+                
+                    return Response(errors, status=400)
+            else:
+                return self.create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = AgentLicense.objects.get(pk=instance_id)
+        except AgentLicense.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+
+        # Update the instance
+        serializer = AgentLicenseSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        
+        # Separate the data based on the models
+        license_data = {key: data[key] for key in ['license_name']}
+        agent_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'agent']}
+        # And so on...
+
+        # Serialize the data for each model
+        license_serializer = SportLicenseSerializer(data=license_data)
+
+        # Validate the data for each model
+        if license_serializer.is_valid():
+            license_instance = license_serializer.save()
+                
+            # Extract 'id' from model1_instance
+            license_id = license_instance.id
+                
+            # Assign id to the appropriate field in Model2
+            agent_data['license_id'] = license_id 
+    
+            # Get the instance to update
+            instance_id = request.data.get('id')  # Remove 'id' from data
+            try:
+                instance = AgentLicense.objects.get(pk=instance_id)
+            except AgentLicense.DoesNotExist:
+                return Response({"error": "Instance does not exist"}, status=404)
+
+            # Update the instance
+            serializer = AgentLicenseSerializer(instance, data=agent_data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        else:
+            # If any serializer data is invalid, return errors
+            errors = {}
+            if not license_serializer.is_valid():
+                errors['license_errors'] = license_serializer.errors
+        
+            return Response(errors, status=400)
+        
+class AgentCareerHistoryViewSet(viewsets.ModelViewSet):
+    queryset = AgentCareerHistory.objects.all()
+    serializer_class = AgentCareerHistorySerializer

@@ -252,12 +252,23 @@ class FootballCoach(models.Model):
     # acheivements = models.ManyToManyField(Acheivements, blank=True)
     # is_open_for_hiring = models.BooleanField(null=True,blank=True)
     # my_worth = models.FloatField(null=True,blank=True)
-    license_id = models.IntegerField(null=True, blank=True)
-    license_name = models.CharField(max_length=255,null=True, blank=True)
-    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    # license_id = models.IntegerField(null=True, blank=True)
+    # license_name = models.CharField(max_length=255,null=True, blank=True)
+    # certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    # coach_license = models.ForeignKey(MyLicense, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
 
     def __str__(self):
         return self.user.email
+    
+class CoachLicense(models.Model):
+    id = models.AutoField(primary_key=True)
+    license_id = models.IntegerField(null=True, blank=True)
+    license_name = models.CharField(max_length=255,null=True, blank=True)
+    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    coach = models.ForeignKey(FootballCoach, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
+    
+    def __str__(self):
+        return self.license_name
     
 class FootballCoachCareerHistory(models.Model):
     id = models.AutoField(primary_key=True)
@@ -368,14 +379,42 @@ class NetworkConnected(models.Model):
 class Agent(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='agent', null=True, blank=True)
-    license_id = models.IntegerField(null=True, blank=True)
-    license_name = models.CharField(max_length=255,null=True, blank=True)
-    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
-    country_name = models.CharField(max_length=255,null=True,blank=True)
-    # player_id = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='agent_inside', null=True, blank=True)
+    # license_id = models.IntegerField(null=True, blank=True)
+    # license_name = models.CharField(max_length=255,null=True, blank=True)
+    # certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    country_name = models.JSONField(null=True,blank=True) 
+    # country_name = models.CharField(max_length=255,null=True,blank=True)
+    # agent_license = models.ForeignKey(AgentLicense, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
 
     def __str__(self):
         return self.user.email
+    
+class AgentCareerHistory(models.Model):
+    id = models.AutoField(primary_key=True)
+    period = models.CharField(max_length=25,null=True, blank=True)
+    company = models.CharField(max_length=255,null=True, blank=True)
+    contact_no = models.CharField(max_length=12,null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    address_lane = models.CharField(max_length=255,null=True, blank=True)
+    zip = models.CharField(max_length=25,null=True, blank=True)
+    state = models.CharField(max_length=255, null=True, blank=True)
+    country = models.CharField(max_length=255, null=True, blank=True)
+    achievements = models.TextField(null=True, blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='career_history',null=True, blank=True)
+
+    def __str__(self):
+        # return self.acheivement_name
+        return "%s %s" % (self.company, self.period)
+    
+class AgentLicense(models.Model):
+    id = models.AutoField(primary_key=True)
+    license_id = models.IntegerField(null=True, blank=True)
+    license_name = models.CharField(max_length=255,null=True, blank=True)
+    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
+    
+    def __str__(self):
+        return self.license_name
     
 # class AgentOutside(models.Model):
 #     id = models.AutoField(primary_key=True)

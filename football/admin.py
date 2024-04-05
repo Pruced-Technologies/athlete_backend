@@ -29,7 +29,7 @@ class ProfilePhotoAdmin(admin.ModelAdmin):
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ("id", "user","top_speed","preferred_foot","injury_history")
+    list_display = ("id", "user","top_speed","preferred_foot")
 
 @admin.register(PlayerVideoClip)
 class PlayerVideoClipAdmin(admin.ModelAdmin):
@@ -49,7 +49,7 @@ class FootballCoachCareerHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(FootballCoach)
 class FootballCoachAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "license_name", "certificate")
+    list_display = ("id", "user")
 
 @admin.register(FootballClub)
 class FootballClubAdmin(admin.ModelAdmin):
@@ -73,7 +73,7 @@ class NetworkConnectedAdmin(admin.ModelAdmin):
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "license_name")
+    list_display = ("id", "user")
 
 
 @admin.register(VerifyRequest)
@@ -111,3 +111,7 @@ class TeamAdmin(admin.ModelAdmin):
 @admin.register(SportLicense)
 class SportLicenseAdmin(admin.ModelAdmin):
     list_display = ("id", "license_name")
+    
+@admin.register(AgentCareerHistory)
+class AgentCareerHistoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "period", "company", "contact_no", "email", "address_lane", "zip", "state", "country", "achievements")
