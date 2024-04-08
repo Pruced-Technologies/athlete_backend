@@ -277,6 +277,8 @@ class PlayerFilter(filters.FilterSet):
     preferred_foot = AllValuesFilter(field_name='preferred_foot')
     current_club = AllValuesFilter(field_name='current_club')
     user__citizenship = AllValuesFilter(field_name='user__citizenship')
+    user__first_name = CharFilter(field_name='user__first_name', lookup_expr='icontains')
+    user__last_name = CharFilter(field_name='user__last_name', lookup_expr='icontains')
     user__dob = filters.DateFromToRangeFilter(field_name='user__dob')
     # age = NumberFilter(method='filter_by_age')
     # user__min_age = NumberFilter(field_name='user__dob', lookup_expr='year__gte')
@@ -297,6 +299,8 @@ class PlayerFilter(filters.FilterSet):
             'current_club',
             'user__citizenship',
             'user__dob',
+            'user__first_name',
+            'user__last_name'
         )
     
 class PlayerSearchViewSet(ListAPIView):
@@ -312,16 +316,18 @@ class CoachFilter(filters.FilterSet):
     user__min_weight = NumberFilter(field_name='user__weight', lookup_expr='gte')
     user__max_weight = NumberFilter(field_name='user__weight', lookup_expr='lte')
     user__citizenship = AllValuesFilter(field_name='user__citizenship')
+    user__first_name = CharFilter(field_name='user__first_name', lookup_expr='icontains')
+    user__last_name = CharFilter(field_name='user__last_name', lookup_expr='icontains')
     user__dob = filters.DateFromToRangeFilter(field_name='user__dob')
-    current_team = AllValuesFilter(field_name='current_team')
-    from_date = NumberFilter(field_name='from_date', lookup_expr='gte')
-    to_date = NumberFilter(field_name='to_date', lookup_expr='lte')
-    min_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='gte')
-    max_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='lte')
-    min_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='gte')
-    max_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='lte')
-    min_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='gte')
-    max_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='lte')
+    # current_team = AllValuesFilter(field_name='current_team')
+    # from_date = NumberFilter(field_name='from_date', lookup_expr='gte')
+    # to_date = NumberFilter(field_name='to_date', lookup_expr='lte')
+    # min_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='gte')
+    # max_playoffs_games_coached_in = NumberFilter(field_name='playoffs_games_coached_in', lookup_expr='lte')
+    # min_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='gte')
+    # max_playoffs_games_won = NumberFilter(field_name='playoffs_games_won', lookup_expr='lte')
+    # min_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='gte')
+    # max_playoffs_games_lost = NumberFilter(field_name='playoffs_games_lost', lookup_expr='lte')
 
     class Meta:
         model = FootballCoach
@@ -331,16 +337,9 @@ class CoachFilter(filters.FilterSet):
             'user__min_weight',
             'user__max_weight',
             'user__citizenship',
-            'user__dob',
-            'current_team',
-            'from_date',
-            'to_date',
-            'min_playoffs_games_coached_in',
-            'max_playoffs_games_coached_in',
-            'min_playoffs_games_won',
-            'max_playoffs_games_won',
-            'min_playoffs_games_lost',
-            'max_playoffs_games_lost',
+            'user__first_name',
+            'user__last_name',
+            'user__dob'
         )
         
         
@@ -1929,3 +1928,7 @@ class FootballAgentLicenseUpdateModelAPIView(APIView):
 class AgentCareerHistoryViewSet(viewsets.ModelViewSet):
     queryset = AgentCareerHistory.objects.all()
     serializer_class = AgentCareerHistorySerializer
+    
+class PlayersCoachesUnderAgentViewSet(viewsets.ModelViewSet):
+    queryset = FootballPlayersAndCoachesUnderMe.objects.all()
+    serializer_class = FootballPlayersAndCoachesUnderMeSerializer

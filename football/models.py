@@ -389,6 +389,17 @@ class Agent(models.Model):
     def __str__(self):
         return self.user.email
     
+class FootballPlayersAndCoachesUnderMe(models.Model):
+    id = models.AutoField(primary_key=True)
+    sport_profile = models.CharField(max_length=25,null=True,blank=True)
+    user_id = models.IntegerField(null=True,blank=True)
+    user_name = models.CharField(max_length=100,null=True,blank=True)
+    is_notable = models.BooleanField(null=True, blank=True)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='players_and_coaches_under_me', blank=True, null=True)
+
+    def __str__(self):
+        return self.user_name
+    
 class AgentCareerHistory(models.Model):
     id = models.AutoField(primary_key=True)
     period = models.CharField(max_length=25,null=True, blank=True)

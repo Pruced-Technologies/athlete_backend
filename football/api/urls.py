@@ -62,6 +62,7 @@ router.register(r'sportlicense', SportLicenseViewSet, basename='sportlicense')
 router.register(r'coachlicense', CoachLicenseViewSet, basename='coachlicense')
 router.register(r'agentlicense', AgentLicenseViewSet, basename='agentlicense')
 router.register(r'agentcareerhistory', AgentCareerHistoryViewSet, basename='agentcareerhistory')
+router.register(r'playerandcoachesunderagent', PlayersCoachesUnderAgentViewSet, basename='playerandcoachesunderagent')
 
 urlpatterns = [
     # path('', views.getRoutes),

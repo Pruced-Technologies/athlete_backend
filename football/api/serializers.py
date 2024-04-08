@@ -192,26 +192,37 @@ class AgentCareerHistorySerializer(serializers.ModelSerializer):
         model = AgentCareerHistory
         fields = '__all__'
         extra_kwargs = {'agent': {'required': False}}
+        
+class FootballPlayersAndCoachesUnderMeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballPlayersAndCoachesUnderMe
+        fields = "__all__"
+        extra_kwargs = {'coach': {'required': False}}
 
 class AgentSerializer(serializers.ModelSerializer):
     my_license = AgentLicenseSerializer(many=True, read_only=True)
     career_history = AgentCareerHistorySerializer(many=True, read_only=True)
+    players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = Agent
         fields = "__all__"
-        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}}
+        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}, 'players_and_coaches_under_me': {'required': False}}
 
 class GetAgentSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     my_license = AgentLicenseSerializer(many=True, read_only=True)
+    career_history = AgentCareerHistorySerializer(many=True, read_only=True)
+    players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
     
     class Meta:
         ordering = ['-id']
         model = Agent
         fields = "__all__"
-        extra_kwargs = {'my_license': {'required': False}}
+        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}, 'players_and_coaches_under_me': {'required': False}}
 
 # class AgentOutsideSerializer(serializers.ModelSerializer):
 

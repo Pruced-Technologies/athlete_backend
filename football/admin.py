@@ -115,3 +115,7 @@ class SportLicenseAdmin(admin.ModelAdmin):
 @admin.register(AgentCareerHistory)
 class AgentCareerHistoryAdmin(admin.ModelAdmin):
     list_display = ("id", "period", "company", "contact_no", "email", "address_lane", "zip", "state", "country", "achievements")
+    
+@admin.register(FootballPlayersAndCoachesUnderMe)
+class FootballPlayersAndCoachesUnderMeAdmin(admin.ModelAdmin):
+    list_display = ("id", "sport_profile", "user_name")
