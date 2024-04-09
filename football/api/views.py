@@ -592,7 +592,7 @@ class MultiModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -656,7 +656,7 @@ class MultiModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -697,7 +697,7 @@ class MultiModelCreateAPIView(APIView):
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -834,7 +834,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -893,7 +893,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -935,7 +935,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -1263,7 +1263,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1326,7 +1326,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1367,7 +1367,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -1505,7 +1505,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1568,7 +1568,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1610,7 +1610,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'period', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)

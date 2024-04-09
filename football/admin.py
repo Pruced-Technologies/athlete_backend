@@ -45,7 +45,7 @@ class FootballTournamentsAdmin(admin.ModelAdmin):
 
 @admin.register(FootballCoachCareerHistory)
 class FootballCoachCareerHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "period", "league_type", "club_name", "league_name", "status")
+    list_display = ("id", "league_type", "club_name", "league_name", "status")
 
 @admin.register(FootballCoach)
 class FootballCoachAdmin(admin.ModelAdmin):
@@ -114,7 +114,7 @@ class SportLicenseAdmin(admin.ModelAdmin):
     
 @admin.register(AgentCareerHistory)
 class AgentCareerHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "period", "company", "contact_no", "email", "address_lane", "zip", "state", "country", "achievements")
+    list_display = ("id", "company", "contact_no", "email", "address_lane", "zip", "state", "country", "achievements")
     
 @admin.register(FootballPlayersAndCoachesUnderMe)
 class FootballPlayersAndCoachesUnderMeAdmin(admin.ModelAdmin):

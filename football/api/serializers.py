@@ -63,7 +63,7 @@ class SportProfileTypeSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = SportProfileType
-        fields = ("id", "profile_type", "is_active", "user_id")
+        fields = "__all__"
         extra_kwargs = {'user_id': {'required': False}}
 
 class AddressSerializer(serializers.ModelSerializer):

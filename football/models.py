@@ -92,6 +92,7 @@ class CustomUser(AbstractUser):
 class SportProfileType(models.Model):
     id = models.AutoField(primary_key=True)
     profile_type = models.CharField(max_length=50)
+    priority = models.CharField(max_length=50, null=True, blank=True)
     is_active = models.BooleanField(
         ("active"),
         default=True,
@@ -206,7 +207,9 @@ class Club(models.Model):
     id = models.AutoField(primary_key=True)
     club_id = models.IntegerField(null=True,blank=True)
     club_name = models.CharField(max_length=255)
-    period = models.CharField(max_length=25,null=True,blank=True)
+    # period = models.CharField(max_length=25,null=True,blank=True)
+    from_year = models.IntegerField(null=True,blank=True)
+    to_year = models.IntegerField(null=True,blank=True)
     games_played = models.IntegerField(null=True,blank=True)
     club_goals = models.IntegerField(null=True,blank=True)
     club_assists = models.IntegerField(null=True,blank=True)
@@ -272,7 +275,9 @@ class CoachLicense(models.Model):
     
 class FootballCoachCareerHistory(models.Model):
     id = models.AutoField(primary_key=True)
-    period = models.CharField(max_length=25,null=True, blank=True)
+    # period = models.CharField(max_length=25,null=True, blank=True)
+    from_year = models.IntegerField(null=True,blank=True)
+    to_year = models.IntegerField(null=True,blank=True)
     league_type = models.CharField(max_length=50,null=True,blank=True)
     country_name = models.CharField(max_length=25,null=True, blank=True)
     club_id = models.IntegerField(null=True, blank=True)
@@ -402,7 +407,9 @@ class FootballPlayersAndCoachesUnderMe(models.Model):
     
 class AgentCareerHistory(models.Model):
     id = models.AutoField(primary_key=True)
-    period = models.CharField(max_length=25,null=True, blank=True)
+    # period = models.CharField(max_length=25,null=True, blank=True)
+    from_year = models.IntegerField(null=True,blank=True)
+    to_year = models.IntegerField(null=True,blank=True)
     company = models.CharField(max_length=255,null=True, blank=True)
     contact_no = models.CharField(max_length=12,null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
