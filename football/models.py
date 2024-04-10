@@ -4,6 +4,9 @@ from django.contrib.auth.models import AbstractUser
 from datetime import date
 from .manager import UserManager
 import uuid
+from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+from django.db.models import UniqueConstraint
 # import datetime
 # from django.contrib.auth import get_user_model
 # User = get_user_model()
@@ -512,3 +515,56 @@ class News(models.Model):
     def __str__(self):
         # return self.comment
         return "%s %s" % (self.user, self.title)
+    
+# added by pijush
+class Opportunity(models.Model):
+    oppid = models.AutoField(primary_key=True)
+    opportunity_type = models.CharField(max_length=255)
+    description = models.TextField()
+    valid_until = models.DateTimeField(null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to CustomUser table
+
+    def __str__(self):
+        return self.oppid
+
+class OpportunityApplications(models.Model):
+    opapplicationID = models.AutoField(primary_key=True)
+    userID = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    opportunityID = models.ForeignKey(Opportunity, on_delete=models.CASCADE)
+    appliedOn = models.DateField()
+    comment = models.TextField()
+
+class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['userID_id','opportunityID'], name='unique_attribute_combo'),
+        ]
+        db_table = 'football_opportunityapplications'
+       
+def __str__(self):
+        return f"Application ID: {self.opapplicationID}, User ID: {self.userID}, Applied On: {self.appliedOn}"
+
+class Help(models.Model):
+    helpid = models.AutoField(primary_key=True)
+    createdBy = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    typeOfHelp = models.CharField(max_length=255)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.helpid
+    
+
+class HelpSupports(models.Model):
+    helpSupportID = models.AutoField(primary_key=True)
+    helpID = models.ForeignKey(Help, on_delete=models.CASCADE)
+    helpProvidedBy = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    helpComments = models.TextField()
+
+    def __str__(self):
+        return self.helpsupportid     
+
+
+# end of addition by Pijush
