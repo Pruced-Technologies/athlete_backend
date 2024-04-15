@@ -94,6 +94,7 @@ urlpatterns = [
     # path('footballagent/', FootballAgentUpdateModelAPIView.as_view(), name='footballagent'),
     path('footballagentlicensecreate/', FootballAgentLicenseCreateModelAPIView.as_view(), name='footballagentlicensecreate'),
     path('footballagentlicenseupdate/', FootballAgentLicenseUpdateModelAPIView.as_view(), name='footballagentlicenseupdate'),
+    path('sportprofile/', SportProfileTypeCreateAndUpdateAPIView.as_view(), name='sportprofile'),
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
     path('', include(router.urls)),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

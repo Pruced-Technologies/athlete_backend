@@ -10,7 +10,7 @@ from football.models import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.generics import ListAPIView, UpdateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django_filters import rest_framework as filters
 from django_filters import FilterSet, AllValuesFilter, NumberFilter, CharFilter
 from django.db import models
@@ -1932,3 +1932,56 @@ class AgentCareerHistoryViewSet(viewsets.ModelViewSet):
 class PlayersCoachesUnderAgentViewSet(viewsets.ModelViewSet):
     queryset = FootballPlayersAndCoachesUnderMe.objects.all()
     serializer_class = FootballPlayersAndCoachesUnderMeSerializer
+    
+class SportProfileTypeAPIView(RetrieveUpdateAPIView):
+    queryset = SportProfileType.objects.all()
+    serializer_class = SportProfileTypeSerializer
+
+    def get_object(self):
+        # Override get_object to handle object retrieval
+        obj = super().get_object()
+        if obj:
+            return obj
+        else:
+            # If object does not exist, return None
+            return None
+
+    def update(self, request, *args, **kwargs):
+        # Override update to handle update logic
+        instance = self.get_object()
+        if instance:
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        else:
+            # If object does not exist, return 404 Not Found
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def create(self, request, *args, **kwargs):
+        # Override create to handle create logic
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+class SportProfileTypeCreateAndUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('user_id')
+        type = request.data.get('profile_type')
+        instance = SportProfileType.objects.get(user_id=instance_id, profile_type=type)
+        if instance:
+            serializer = SportProfileTypeSerializer(instance, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        else:
+            # If 'user_id' is not present, it's a create operation
+            serializer = SportProfileTypeSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
