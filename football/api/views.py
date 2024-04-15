@@ -21,6 +21,7 @@ from .emails import *
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from rest_framework.permissions import AllowAny
 # import datetime
 
 from django_rest_passwordreset.signals import reset_password_token_created
@@ -117,6 +118,8 @@ class ProfilePhotoViewSet(viewsets.ModelViewSet):
 class ClubViewSet(viewsets.ModelViewSet):
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
 
 class PlayerViewSet(viewsets.ModelViewSet):
@@ -1932,56 +1935,32 @@ class AgentCareerHistoryViewSet(viewsets.ModelViewSet):
 class PlayersCoachesUnderAgentViewSet(viewsets.ModelViewSet):
     queryset = FootballPlayersAndCoachesUnderMe.objects.all()
     serializer_class = FootballPlayersAndCoachesUnderMeSerializer
+
+# added by Pijush
+#User = get_user_model()  # Get the User model dynamically
+
+class OpportunityViewSet(viewsets.ModelViewSet):
+    queryset = Opportunity.objects.all()
+    serializer_class = OpportunitySerializer
+#    permission_classes = [IsAuthenticated]
+
+class OpportunityApplicationsViewSet(viewsets.ModelViewSet):
+    queryset = OpportunityApplications.objects.all()
+    serializer_class = OpportunityApplicationsSerializer
+
+class HelpViewSet(viewsets.ModelViewSet):
+    queryset = Help.objects.all()
+    serializer_class = HelpSerializer
+
+class HelpSupportViewSet(viewsets.ModelViewSet):
+    queryset = HelpSupports.objects.all()
+    serializer_class = HelpSupportsSerializer
+
+class WellnessScoreViewSet(viewsets.ModelViewSet):
+    queryset = WellnessScore.objects.all()
+    serializer_class = WellnessScoreSerializer
     
-class SportProfileTypeAPIView(RetrieveUpdateAPIView):
-    queryset = SportProfileType.objects.all()
-    serializer_class = SportProfileTypeSerializer
-
-    def get_object(self):
-        # Override get_object to handle object retrieval
-        obj = super().get_object()
-        if obj:
-            return obj
-        else:
-            # If object does not exist, return None
-            return None
-
-    def update(self, request, *args, **kwargs):
-        # Override update to handle update logic
-        instance = self.get_object()
-        if instance:
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        else:
-            # If object does not exist, return 404 Not Found
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-    def create(self, request, *args, **kwargs):
-        # Override create to handle create logic
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
-class SportProfileTypeCreateAndUpdateAPIView(APIView):
-    def post(self, request, *args, **kwargs):
-        # Get the instance to update
-        instance_id = request.data.get('user_id')
-        type = request.data.get('profile_type')
-        instance = SportProfileType.objects.get(user_id=instance_id, profile_type=type)
-        if instance:
-            serializer = SportProfileTypeSerializer(instance, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=200)
-            return Response(serializer.errors, status=400)
-        else:
-            # If 'user_id' is not present, it's a create operation
-            serializer = SportProfileTypeSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=200)
-            return Response(serializer.errors, status=400)
+class ConditioningLogViewSet(viewsets.ModelViewSet):
+    queryset = ConditioningLog.objects.all()
+    serializer_class = ConditioningLogSerializer
+# end of Added by Pijush

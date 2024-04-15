@@ -33,7 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -128,7 +128,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'root.wsgi.application'
-ASGI_APPLICATION = "root.asgi.application"
+#ASGI_APPLICATION = "root.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -150,16 +150,28 @@ CHANNEL_LAYERS = {
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'athlete',
+#         'USER': 'postgres',
+#         'PASSWORD': 'admin',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'athlete',
-        'USER': 'postgres',
-        'PASSWORD': 'admin',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'scouted',
+        'USER': 'root',
+        'PASSWORD': 'infodba',
+        'HOST': 'localhost',    # Or your MySQL host
+        'PORT': '3306',         # Or your MySQL port
     }
 }
+
 
 
 # Password validation
