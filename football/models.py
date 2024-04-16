@@ -92,7 +92,7 @@ class CustomUser(AbstractUser):
 class SportProfileType(models.Model):
     id = models.AutoField(primary_key=True)
     profile_type = models.CharField(max_length=50)
-    priority = models.CharField(max_length=50, null=True, blank=True)
+    status = models.CharField(max_length=50, default="Not current", null=True, blank=True)
     is_active = models.BooleanField(
         ("active"),
         default=True,

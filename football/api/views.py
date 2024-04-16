@@ -10,7 +10,7 @@ from football.models import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.generics import ListAPIView, UpdateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from django_filters import rest_framework as filters
 from django_filters import FilterSet, AllValuesFilter, NumberFilter, CharFilter
 from django.db import models
