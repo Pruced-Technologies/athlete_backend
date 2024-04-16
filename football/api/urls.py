@@ -63,6 +63,12 @@ router.register(r'coachlicense', CoachLicenseViewSet, basename='coachlicense')
 router.register(r'agentlicense', AgentLicenseViewSet, basename='agentlicense')
 router.register(r'agentcareerhistory', AgentCareerHistoryViewSet, basename='agentcareerhistory')
 router.register(r'playerandcoachesunderagent', PlayersCoachesUnderAgentViewSet, basename='playerandcoachesunderagent')
+router.register(r'opportunities', OpportunityViewSet, basename='opportunities')
+router.register(r'opportunityapplications', OpportunityApplicationsViewSet,basename='oppapplications')
+router.register(r'help', HelpViewSet, basename='help')
+router.register(r'helpsupport', HelpSupportViewSet, basename='helpSupport') 
+router.register(r'wellnessscore', WellnessScoreViewSet, basename='wellnessscore')
+router.register(r'condiotioninglog', ConditioningLogViewSet, basename='condiotioninglog')
 
 urlpatterns = [
     # path('', views.getRoutes),
@@ -77,7 +83,7 @@ urlpatterns = [
     path('send/mail', Sendmail.as_view(), name='send_mail'),
     path('get/comments/<slug:slug>/<int:limit>/', GetPostCommentsViewSet.as_view(), name='get_comments'),
     path('connectrequest/<int:id>/', views.networkConnect),
-    path('changepassword/', change_password, name='change_password'),
+    path('changepassword/', views.change_password, name='change_password'),
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path('changepresentaddress/', PresentAddressUpdateView.as_view(), name='changepresentaddress'),
     path('playerhistory/', MultiModelCreateAPIView.as_view(), name='playerhistory'),
@@ -95,5 +101,7 @@ urlpatterns = [
     path('footballagentlicensecreate/', FootballAgentLicenseCreateModelAPIView.as_view(), name='footballagentlicensecreate'),
     path('footballagentlicenseupdate/', FootballAgentLicenseUpdateModelAPIView.as_view(), name='footballagentlicenseupdate'),
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
+#    path('opportunities/', views.list_opportunities, name='list-opportunities'),
     path('', include(router.urls)),
+    
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

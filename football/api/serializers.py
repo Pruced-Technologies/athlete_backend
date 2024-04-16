@@ -63,7 +63,7 @@ class SportProfileTypeSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = SportProfileType
-        fields = "__all__"
+        fields = ('id','profile_type','is_active','user_id')
         extra_kwargs = {'user_id': {'required': False}}
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -584,3 +584,38 @@ class SportLicenseSerializer(serializers.ModelSerializer):
         ordering = ['-id']
         model = SportLicense
         fields = ("id", "license_name")
+
+        #added by Pijush
+class OpportunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Opportunity
+        fields = ['oppid', 'opportunity_type', 'description', 'valid_until','user']
+        extra_kwargs = {'valid_until': {'required': False}}
+class OpportunityApplicationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OpportunityApplications
+        fields = ['opapplicationID', 'actedBy','saved','applied','appliedOn', 'comment','opportunityID']
+        extra_kwargs = {'comment': {'required': False}}
+
+class HelpSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Help
+        fields = ['helpid','typeOfHelp', 'description', 'createdBy']
+
+class HelpSupportsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HelpSupports
+        fields = ['helpSupportID','helpID','helpProvidedBy', 'helpComments','helpProvidedBy']
+        extra_kwargs = {'helpComments': {'required': False}}
+
+
+class WellnessScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WellnessScore
+        fields = ['wellnessid','createdBy','mood','canManage','canHandlePressure','sleepHours', 'energyLevel', 'haveSupport', 'feelConnected', 'knowResourcesForSupport', 'needSupport', 'created_at', 'updated_at']
+
+class ConditioningLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConditioningLog
+        fields = '__all__'        
+#end of added by Pijush 

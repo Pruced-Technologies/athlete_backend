@@ -4,9 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from datetime import date
 from .manager import UserManager
 import uuid
-from django.contrib.auth.models import User
-from django.contrib.auth.models import AbstractUser
-from django.db.models import UniqueConstraint
 # import datetime
 # from django.contrib.auth import get_user_model
 # User = get_user_model()
@@ -529,14 +526,16 @@ class Opportunity(models.Model):
 
 class OpportunityApplications(models.Model):
     opapplicationID = models.AutoField(primary_key=True)
-    userID = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    actedBy = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     opportunityID = models.ForeignKey(Opportunity, on_delete=models.CASCADE)
+    saved = models.IntegerField(null=True,blank=True)
+    applied = models.IntegerField(null=True,blank=True)
     appliedOn = models.DateField()
     comment = models.TextField()
 
 class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['userID_id','opportunityID'], name='unique_attribute_combo'),
+            models.UniqueConstraint(fields=['actedBy_id','opportunityID'], name='unique_attribute_combo'),
         ]
         db_table = 'football_opportunityapplications'
        
@@ -554,7 +553,6 @@ class Help(models.Model):
     def __str__(self):
         return self.helpid
     
-
 class HelpSupports(models.Model):
     helpSupportID = models.AutoField(primary_key=True)
     helpID = models.ForeignKey(Help, on_delete=models.CASCADE)
@@ -566,5 +564,52 @@ class HelpSupports(models.Model):
     def __str__(self):
         return self.helpsupportid     
 
+class WellnessScore(models.Model):
+    Yes_No = [
+        ('Yes', 'Yes'),
+        ('No', 'No'),
+         ]
 
+    wellnessid = models.AutoField(primary_key=True)
+    createdBy = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+  # understand the current mental condition of the player  
+    mood = models.CharField(max_length=50)
+    canManage = models.CharField(max_length=10,choices=Yes_No)
+    canHandlePressure = models.CharField(max_length=10)
+    sleepHours = models.IntegerField()
+    energyLevel = models.IntegerField()
+    #do you have suport for your mental health
+    haveSupport = models.CharField(max_length=10)
+    # are you feeling connected to other players
+    feelConnected = models.CharField(max_length=10)
+    # do you have friends, family members with whom you can share your feelings
+    knowResourcesForSupport = models.CharField(max_length=10)
+    # do you need want to talk to someone
+    needSupport = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.wellnessid
+    
+class ConditioningLog(models.Model):
+    createdBy = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    date_time = models.DateTimeField(auto_now_add=True)
+    activity_type = models.CharField(max_length=50)
+    duration_minutes = models.IntegerField()
+    intensity = models.CharField(max_length=20)
+    distance_km = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    sets = models.IntegerField(null=True, blank=True)
+    heart_rate_bpm = models.IntegerField(null=True, blank=True)
+    calories_burned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    pre_session_mood = models.CharField(max_length=20, blank=True)
+    post_session_mood = models.CharField(max_length=20, blank=True)
+    equipment_used = models.CharField(max_length=100, blank=True)
+    injuries_discomfort = models.TextField(blank=True)
+    sleep_hours = models.IntegerField(null=True, blank=True)
+    water_intake_inlts = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    
+    def __str__(self):
+        return f"Conditioning Log - {self.date_time}"
 # end of addition by Pijush

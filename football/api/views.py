@@ -21,6 +21,7 @@ from .emails import *
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from rest_framework.permissions import AllowAny
 # import datetime
 
 from django_rest_passwordreset.signals import reset_password_token_created
@@ -117,6 +118,8 @@ class ProfilePhotoViewSet(viewsets.ModelViewSet):
 class ClubViewSet(viewsets.ModelViewSet):
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
 
 class PlayerViewSet(viewsets.ModelViewSet):
@@ -1932,3 +1935,32 @@ class AgentCareerHistoryViewSet(viewsets.ModelViewSet):
 class PlayersCoachesUnderAgentViewSet(viewsets.ModelViewSet):
     queryset = FootballPlayersAndCoachesUnderMe.objects.all()
     serializer_class = FootballPlayersAndCoachesUnderMeSerializer
+
+# added by Pijush
+#User = get_user_model()  # Get the User model dynamically
+
+class OpportunityViewSet(viewsets.ModelViewSet):
+    queryset = Opportunity.objects.all()
+    serializer_class = OpportunitySerializer
+#    permission_classes = [IsAuthenticated]
+
+class OpportunityApplicationsViewSet(viewsets.ModelViewSet):
+    queryset = OpportunityApplications.objects.all()
+    serializer_class = OpportunityApplicationsSerializer
+
+class HelpViewSet(viewsets.ModelViewSet):
+    queryset = Help.objects.all()
+    serializer_class = HelpSerializer
+
+class HelpSupportViewSet(viewsets.ModelViewSet):
+    queryset = HelpSupports.objects.all()
+    serializer_class = HelpSupportsSerializer
+
+class WellnessScoreViewSet(viewsets.ModelViewSet):
+    queryset = WellnessScore.objects.all()
+    serializer_class = WellnessScoreSerializer
+    
+class ConditioningLogViewSet(viewsets.ModelViewSet):
+    queryset = ConditioningLog.objects.all()
+    serializer_class = ConditioningLogSerializer
+# end of Added by Pijush
