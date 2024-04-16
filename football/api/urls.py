@@ -100,7 +100,7 @@ urlpatterns = [
     # path('footballagent/', FootballAgentUpdateModelAPIView.as_view(), name='footballagent'),
     path('footballagentlicensecreate/', FootballAgentLicenseCreateModelAPIView.as_view(), name='footballagentlicensecreate'),
     path('footballagentlicenseupdate/', FootballAgentLicenseUpdateModelAPIView.as_view(), name='footballagentlicenseupdate'),
-   path('sportprofile/', SportProfileTypeCreateAndUpdateAPIView.as_view(), name='sportprofile'),
+   
     # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
 #    path('opportunities/', views.list_opportunities, name='list-opportunities'),
     path('', include(router.urls)),
