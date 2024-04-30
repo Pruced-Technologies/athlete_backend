@@ -150,27 +150,27 @@ CHANNEL_LAYERS = {
 #     }
 # }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'athlete',
-#         'USER': 'postgres',
-#         'PASSWORD': 'admin',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'scouted',
-        'USER': 'root',
-        'PASSWORD': 'infodba',
-        'HOST': 'localhost',    # Or your MySQL host
-        'PORT': '3306',         # Or your MySQL port
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'bscouted',
+        'USER': 'postgres',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'scouted',
+#         'USER': 'root',
+#         'PASSWORD': 'infodba',
+#         'HOST': 'localhost',    # Or your MySQL host
+#         'PORT': '3306',         # Or your MySQL port
+#     }
+# }
 
 
 
