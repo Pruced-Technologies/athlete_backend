@@ -2014,3 +2014,5 @@ class ConditioningLogViewSet(viewsets.ModelViewSet):
     queryset = ConditioningLog.objects.all()
     serializer_class = ConditioningLogSerializer
 # end of Added by Pijush
+
+# changes made
