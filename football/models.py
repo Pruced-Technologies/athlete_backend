@@ -4,9 +4,12 @@ from django.contrib.auth.models import AbstractUser
 from datetime import date
 from .manager import UserManager
 import uuid
+from rest_framework_simplejwt.tokens import RefreshToken
 # import datetime
 # from django.contrib.auth import get_user_model
 # User = get_user_model()
+
+AUTH_PROVIDERS ={'email':'email', 'google':'google', 'facebook':'facebook'}
 
 # Create your models here.
 
@@ -74,8 +77,10 @@ class CustomUser(AbstractUser):
     profile_photo = models.ImageField(upload_to="profile",null=True,blank=True)
     profile_photo_url = models.TextField(blank=True,null=True)
     citizenship = models.CharField(max_length=100,blank=True,null=True)
+    reg_id = models.CharField(max_length=50,blank=True,null=True)
     # password2 = models.CharField(max_length=100,blank=True,null=True)
     # is_open_for_hiring = models.BooleanField(null=True,blank=True)
+    auth_provider=models.CharField(max_length=50, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
     
     def calculate_age(self):
         if self.dob:
@@ -88,6 +93,21 @@ class CustomUser(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['contact_no']
+    
+    def tokens(self):    
+        refresh = RefreshToken.for_user(self)
+        return {
+            "refresh":str(refresh),
+            "access":str(refresh.access_token)
+        }
+
+
+    def __str__(self):
+        return self.email
+
+    @property
+    def get_full_name(self):
+        return f"{self.first_name.title()} {self.last_name.title()}"
 
 class SportProfileType(models.Model):
     id = models.AutoField(primary_key=True)
@@ -101,7 +121,7 @@ class SportProfileType(models.Model):
             "Unselect this instead of deleting address."
         ),
     )
-    user_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, related_name='sport_profile_type', blank=True, null=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, related_name='sport_profile_type', blank=True, null=True)
 
 class ProfileDescription(models.Model):
     id = models.AutoField(primary_key=True)
@@ -205,7 +225,7 @@ class PlayerVideoClip(models.Model):
     
 class Club(models.Model):
     id = models.AutoField(primary_key=True)
-    club_id = models.IntegerField(null=True,blank=True)
+    club_id = models.CharField(max_length=255,null=True,blank=True)
     club_name = models.CharField(max_length=255)
     # period = models.CharField(max_length=25,null=True,blank=True)
     from_year = models.IntegerField(null=True,blank=True)
@@ -232,10 +252,26 @@ class Club(models.Model):
     status = models.CharField(max_length=50,null=True,blank=True)
     remarks = models.TextField(null=True,blank=True)
     achievements = models.TextField(null=True,blank=True)
+    summary = models.TextField(null=True,blank=True)
     players = models.ForeignKey(Player, on_delete=models.CASCADE,related_name='club', blank=True, null=True)
 
     def __str__(self):
         return self.club_name
+    
+class FootballPlayerEndorsementRequest(models.Model):
+    id = models.AutoField(primary_key=True)
+    # from_requester = models.IntegerField(null=True,blank=True)
+    to_endorser_email = models.CharField(max_length=255,null=True,blank=True)
+    to_endorser = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player_club_endorser', null=True,blank=True)
+    from_endorsee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player_endorsee', null=True,blank=True)
+    type = models.CharField(max_length=25,null=True,blank=True)
+    status = models.CharField(max_length=25,null=True,blank=True)
+    comments = models.TextField(null=True,blank=True)
+    remarks = models.TextField(null=True,blank=True)
+    player_career_history = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='endorsement_request', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.from_endorsee} {self.to_endorser} {self.type}"
     
 class FootballCoach(models.Model):
     id = models.AutoField(primary_key=True)
@@ -287,11 +323,27 @@ class FootballCoachCareerHistory(models.Model):
     status = models.CharField(max_length=50,null=True,blank=True)
     remarks = models.TextField(null=True,blank=True)
     achievements = models.TextField(null=True,blank=True)
+    summary = models.TextField(null=True,blank=True)
     coach_id = models.ForeignKey(FootballCoach, on_delete=models.CASCADE, related_name='carreer_history', blank= True, null= True)
 
     def __str__(self):
         # return self.club_name
-        return "%s %s %s" % (self.club_name, self.period, self.league_name)
+        return "%s %s %s" % (self.club_name, self.league_name)
+    
+class FootballCoachEndorsementRequest(models.Model):
+    id = models.AutoField(primary_key=True)
+    # from_requester = models.IntegerField(null=True,blank=True)
+    to_endorser_email = models.CharField(max_length=255,null=True,blank=True)
+    to_endorser = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='coach_club_endorser', null=True,blank=True)
+    from_endorsee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='coach_endorsee', null=True,blank=True)
+    type = models.CharField(max_length=25,null=True,blank=True)
+    status = models.CharField(max_length=25,null=True,blank=True)
+    comments = models.TextField(null=True,blank=True)
+    remarks = models.TextField(null=True,blank=True)
+    coach_career_history = models.ForeignKey(FootballCoachCareerHistory, on_delete=models.CASCADE, related_name='endorsement_request', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.from_endorsee} {self.to_endorser} {self.type}"
     
 class FootballTournaments(models.Model):
     id = models.AutoField(primary_key=True)
@@ -394,20 +446,8 @@ class Agent(models.Model):
     def __str__(self):
         return self.user.email
     
-class FootballPlayersAndCoachesUnderMe(models.Model):
-    id = models.AutoField(primary_key=True)
-    sport_profile = models.CharField(max_length=25,null=True,blank=True)
-    user_id = models.IntegerField(null=True,blank=True)
-    user_name = models.CharField(max_length=100,null=True,blank=True)
-    is_notable = models.BooleanField(null=True, blank=True)
-    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='players_and_coaches_under_me', blank=True, null=True)
-
-    def __str__(self):
-        return self.user_name
-    
 class AgentCareerHistory(models.Model):
     id = models.AutoField(primary_key=True)
-    # period = models.CharField(max_length=25,null=True, blank=True)
     from_year = models.IntegerField(null=True,blank=True)
     to_year = models.IntegerField(null=True,blank=True)
     company = models.CharField(max_length=255,null=True, blank=True)
@@ -418,11 +458,39 @@ class AgentCareerHistory(models.Model):
     state = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=True, blank=True)
     achievements = models.TextField(null=True, blank=True)
+    summary = models.TextField(null=True,blank=True)
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='career_history',null=True, blank=True)
 
     def __str__(self):
         # return self.acheivement_name
-        return "%s %s" % (self.company, self.period)
+        return "%s %s %s" % (self.company, self.from_year, self.to_year)
+
+class FootballPlayersAndCoachesUnderMe(models.Model):
+    id = models.AutoField(primary_key=True)
+    type = models.CharField(max_length=25,null=True,blank=True)
+    user_id = models.IntegerField(null=True,blank=True)
+    name = models.CharField(max_length=100,null=True,blank=True)
+    is_notable = models.BooleanField(null=True, blank=True)
+    # agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='players_and_coaches_under_me', blank=True, null=True)
+    agent_career_history = models.ForeignKey(AgentCareerHistory, on_delete=models.CASCADE, related_name='players_and_coaches_under_me', blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+    
+class FootballAgentEndorsementRequest(models.Model):
+    id = models.AutoField(primary_key=True)
+    # from_requester = models.IntegerField(null=True,blank=True)
+    to_endorser_email = models.CharField(max_length=255,null=True,blank=True)
+    to_endorser = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='endorser', null=True,blank=True)
+    from_endorsee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='endorsee', null=True,blank=True)
+    type = models.CharField(max_length=25,null=True,blank=True)
+    status = models.CharField(max_length=25,null=True,blank=True)
+    comments = models.TextField(null=True,blank=True)
+    remarks = models.TextField(null=True,blank=True)
+    agent_players_coaches_under_me = models.ForeignKey(FootballPlayersAndCoachesUnderMe, on_delete=models.CASCADE, related_name='endorsement_request', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.from_endorsee} {self.to_endorser} {self.type}"
     
 class AgentLicense(models.Model):
     id = models.AutoField(primary_key=True)
@@ -468,6 +536,7 @@ class PostItem(models.Model):
     # likes = models.IntegerField(default=0)
     video_link = models.CharField(max_length=255,null=True,blank=True)
     type = models.CharField(max_length=10,null=True,blank=True)
+    post_type = models.CharField(max_length=25,null=True,blank=True)
     # comments = models.ManyToManyField(PostComments, related_name='comments', blank=True)
 
     def __str__(self):
@@ -508,6 +577,7 @@ class News(models.Model):
     start_date = models.DateField(null=True,blank=True)
     end_date = models.DateField(null=True,blank=True)
     # readers = models.ManyToManyField(CustomUser, blank=True)
+    attending_persons = models.ManyToManyField(CustomUser, related_name="attending_persons", blank=True)
 
     def __str__(self):
         # return self.comment
@@ -613,3 +683,4 @@ class ConditioningLog(models.Model):
     def __str__(self):
         return f"Conditioning Log - {self.date_time}"
 # end of addition by Pijush
+

@@ -21,6 +21,9 @@ from .emails import *
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.db import transaction
+from django.utils.crypto import get_random_string
+import random
 # import datetime
 
 from django_rest_passwordreset.signals import reset_password_token_created
@@ -134,7 +137,10 @@ class FootballCoachViewSet(viewsets.ModelViewSet):
 class FootballCoachCareerHistoryViewSet(viewsets.ModelViewSet):
     queryset = FootballCoachCareerHistory.objects.all()
     serializer_class = FootballCoachCareerHistorySerializer
-
+    
+class FootballCoachEndorsementRequestViewSet(viewsets.ModelViewSet):
+    queryset = FootballCoachEndorsementRequest.objects.all()
+    serializer_class = FootballCoachEndorsementRequestSerializer
 class FootballTournamentViewSet(viewsets.ModelViewSet):
     queryset = FootballTournaments.objects.all()
     serializer_class = FootballTournamentsSerializer
@@ -279,6 +285,7 @@ class PlayerFilter(filters.FilterSet):
     user__citizenship = AllValuesFilter(field_name='user__citizenship')
     user__first_name = CharFilter(field_name='user__first_name', lookup_expr='icontains')
     user__last_name = CharFilter(field_name='user__last_name', lookup_expr='icontains')
+    user__email = CharFilter(field_name='user__email', lookup_expr='icontains')
     user__dob = filters.DateFromToRangeFilter(field_name='user__dob')
     # age = NumberFilter(method='filter_by_age')
     # user__min_age = NumberFilter(field_name='user__dob', lookup_expr='year__gte')
@@ -300,7 +307,8 @@ class PlayerFilter(filters.FilterSet):
             'user__citizenship',
             'user__dob',
             'user__first_name',
-            'user__last_name'
+            'user__last_name',
+            'user__email'
         )
     
 class PlayerSearchViewSet(ListAPIView):
@@ -473,7 +481,7 @@ class NewsViewSet(viewsets.ModelViewSet):
     serializer_class = NewsSerializer
     # filter_backends = [filters.DjangoFilterBackend]
     # filter_class = NewsFilter
-
+    
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -581,18 +589,23 @@ class CountryViewSet(viewsets.ModelViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
     
+class FootballPlayerEndorsementRequestViewSet(viewsets.ModelViewSet):
+    queryset = FootballPlayerEndorsementRequest.objects.all()
+    serializer_class = FootballPlayerEndorsementRequestSerializer
+    
 class MultiModelCreateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Assuming the request data contains a 'type' field indicating the model
-        data_type = request.data.get('flag')
+        career_history = request.data.get('career_history')
+        data_type = career_history.get('flag')
         # print(data_type)
 
         if data_type == 'league':
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -610,15 +623,35 @@ class MultiModelCreateAPIView(APIView):
                 
                 # Assign id to the appropriate field in Model2
                 player_data['league_id'] = league_id    
-                coach_serializer = ClubSerializer(data=player_data)
-                if coach_serializer.is_valid():
-                    coach_serializer.save()
-        
-                    # Return any relevant data or success message
+                player_serializer = ClubSerializer(data=player_data)
+                if player_serializer.is_valid():
+                    player_career_history_instance = player_serializer.save()
+
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request!=''):
+                        print(endorsement_request) 
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                            my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                            endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement request from player',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[my_object.email],
+                                fail_silently=False,
+                            )
+                            endorsement_request_serializer.save()   
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
                     return Response({"message": "Data saved successfully"}, status=201)
                 else:
                     errors = {}
-                    errors['coach_errors'] = coach_serializer.errors
+                    errors['player_errors'] = player_serializer.errors
                     
                     return Response(errors, status=400)
             else:
@@ -630,8 +663,9 @@ class MultiModelCreateAPIView(APIView):
                 return Response(errors, status=400)
             
         elif data_type == 'team':
-             # Get the data sent through HTTP POST
-            data = request.data
+            # Get the data sent through HTTP POST
+            # career_history = request.data.get('career_history')
+            data = career_history
             
             if 'league_id' in data:
                 # If 'id' is present, it's an update operation
@@ -656,7 +690,7 @@ class MultiModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'players']}
             # And so on...
 
             # Serialize the data for each model
@@ -667,21 +701,42 @@ class MultiModelCreateAPIView(APIView):
                 team_instance = team_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 
                 # Assign id to the appropriate field in Model2
                 player_data['club_id'] = team_id    
                 player_serializer = ClubSerializer(data=player_data)
                 if player_serializer.is_valid():
-                    player_serializer.save()
-        
+                    player_career_history_instance = player_serializer.save()
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from player for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
                     return Response({"message": "Data saved successfully"}, status=201)
                 else:
-                    errors = {}
-                    errors['player_errors'] = player_serializer.errors
-                    
-                    return Response(errors, status=400)
+                    return Response(player_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -692,12 +747,13 @@ class MultiModelCreateAPIView(APIView):
         
         elif data_type == 'teamleague':
              # Get the data sent through HTTP POST
-            data = request.data
+            # career_history = request.data.get('career_history')
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'players']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -709,7 +765,7 @@ class MultiModelCreateAPIView(APIView):
                 league_instance = league_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 league_id = league_instance.id
                 
                 # Assign id to the appropriate field in Model2
@@ -717,15 +773,36 @@ class MultiModelCreateAPIView(APIView):
                 player_data['league_id'] = league_id    
                 player_serializer = ClubSerializer(data=player_data)
                 if player_serializer.is_valid():
-                    player_serializer.save()
-        
+                    player_career_history_instance = player_serializer.save()
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from player for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
                     return Response({"message": "Data saved successfully"}, status=201)
                 else:
-                    errors = {}
-                    errors['player_errors'] = player_serializer.errors
-                    
-                    return Response(errors, status=400)
+                    return Response(player_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -740,15 +817,127 @@ class MultiModelCreateAPIView(APIView):
             return Response({"error": "Invalid data type provided"}, status=400)
         
 
+# class MultiModelCreateUpdateAPIView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         career_history = request.data.get('career_history')
+#         # Check if 'id' is present in request data
+#         if 'league_id' in career_history:
+#             # If 'id' is present, it's an update operation
+#             flag=1
+#             # data = career_history
+#             league_id = career_history.get('league_id')
+#             sport_type = career_history.get('sport_type')
+#             print(league_id)
+#             my_object = League.objects.get(id=league_id)
+#             print(my_object.sport_type)
+#             substrings = my_object.sport_type.split(',')
+#             print(f"Substrings are {substrings}")
+#             for substring in substrings:
+#                 print(f"Sport type: {sport_type} found in the list.")
+#                 if(substring.lower() == sport_type.lower()):
+#                     print(f"Substring: {substring} found in the list.")
+#                     flag = 0
+#             if(flag == 1):
+#                 my_object.sport_type = my_object.sport_type + "," + sport_type
+#                 print(my_object.sport_type)
+#                 my_object.save()
+#             return self.create(request, *args, **kwargs)
+#         else:
+#             # If 'id' is not present, it's a create operation
+#             return self.create(request, *args, **kwargs)
+
+#     def create(self, request, *args, **kwargs):
+#         career_history = request.data.get('career_history')
+#         club_serializer = ClubSerializer(data=career_history)
+#         if club_serializer.is_valid():
+#             player_career_history_instance = club_serializer.save()
+            
+#             endorsement_request = request.data.get('endorsement_request')
+#             if(len(endorsement_request)>0):
+#                 print(endorsement_request) 
+#                 if isinstance(endorsement_request, list):
+#                     serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request, many=True)
+#                     if serializer.is_valid():
+#                         for item_data in serializer.validated_data:
+#                             # print(item_data['to_endorser'])
+#                             if item_data['to_endorser'] is None:
+#                                 # random_str = generate_random_string(10)
+#                                 random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+#                                 new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+#                                 print(new_user)
+#                                 user_serializer = UserSerializer(data=new_user)
+#                                 if user_serializer.is_valid():
+#                                     user_instance = user_serializer.save()
+#                                     # print(user_serializer.data)
+#                                     # print(user_instance)
+                                    
+#                                     # Extract 'id' from model1_instance
+#                                     # user_instance_id = user_instance.id
+#                                     # print(user_instance_id)
+                    
+#                                     # Assign id to the appropriate field in Model2
+#                                     item_data['to_endorser'] = user_instance
+#                                     item_data['player_career_history'] = player_career_history_instance
+#                                     # print(item_data['to_endorser'])
+                                    
+#                                     # print(serializer.validated_data)
+                                    
+#                                     # user_serializer.save()
+#                                     # # Access the saved object instance
+#                                     # saved_object = user_serializer.instance
+#                                     # # Now you can access any attribute of the saved object
+#                                     # item_data['to_endorser'] = saved_object.id
+                                    
+#                                     send_mail(
+#                                         subject='Endorsement Request',
+#                                         message='Endorsement request from player for registration',
+#                                         from_email='athletescouting@gmail.com',
+#                                         recipient_list=[item_data['to_endorser_email']],
+#                                         fail_silently=False,
+#                                     )
+#                                 else:
+#                                     return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#                             else:
+#                                 item_data['player_career_history'] = player_career_history_instance
+                                
+#                                 send_mail(
+#                                     subject='Endorsement Request',
+#                                     message='Endorsement request from player',
+#                                     from_email='athletescouting@gmail.com',
+#                                     recipient_list=[item_data['to_endorser_email']],
+#                                     fail_silently=False,
+#                                 )
+                                
+#                         try:
+#                             with transaction.atomic():
+#                                 FootballPlayerEndorsementRequest.objects.bulk_create([
+#                                     FootballPlayerEndorsementRequest(**item) for item in serializer.validated_data
+#                                 ])
+#                                 # serializer.save()
+                                
+#                             return Response(serializer.data, status=200)
+                                
+#                             # return self.update(request, *args, **kwargs)
+#                         except Exception as e:
+#                             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#                 else:
+#                     return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
+#             return Response(club_serializer.data, status=201)
+        
+#         return Response(club_serializer.errors, status=400)
+
+
 class MultiModelCreateUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
+        career_history = request.data.get('career_history')
         # Check if 'id' is present in request data
-        if 'league_id' in request.data:
+        if 'league_id' in career_history:
             # If 'id' is present, it's an update operation
             flag=1
-            data = request.data
-            league_id = data.get('league_id')
-            sport_type = data.get('sport_type')
+            # data = career_history
+            league_id = career_history.get('league_id')
+            sport_type = career_history.get('sport_type')
             print(league_id)
             my_object = League.objects.get(id=league_id)
             print(my_object.sport_type)
@@ -769,24 +958,47 @@ class MultiModelCreateUpdateAPIView(APIView):
             return self.create(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-       
-        serializer = ClubSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
+        career_history = request.data.get('career_history')
+        club_serializer = ClubSerializer(data=career_history)
+        if club_serializer.is_valid():
+            player_career_history_instance = club_serializer.save()
+            
+            endorsement_request = request.data.get('endorsement_request')
+            if(endorsement_request!=''):
+                print(endorsement_request) 
+                endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                if endorsement_request_serializer.is_valid():
+                    endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                    my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                    endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                    send_mail(
+                        subject='Endorsement Request',
+                        message='Endorsement request from player',
+                        from_email='athletescouting@gmail.com',
+                        recipient_list=[my_object.email],
+                        fail_silently=False,
+                    )
+                    endorsement_request_serializer.save()   
+                else:
+                    return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+            return Response({"message": "Data saved successfully"}, status=201)
         
-        return Response(serializer.errors, status=400)
+        return Response(club_serializer.errors, status=400)
     
 class PlayerLeagueModelUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        value = request.data.get('league_id')
+        career_history = request.data.get('career_history')
+        value = career_history.get('league_id')
         # Check if 'id' is present in request data
         if value != '':
             # If 'id' is present, it's an update operation
             flag=1
-            data = request.data
-            league_id = data.get('league_id')
-            sport_type = data.get('sport_type')
+            # data = career_history
+            league_id = career_history.get('league_id')
+            sport_type = career_history.get('sport_type')
             print(league_id)
             my_object = League.objects.get(id=league_id)
             print(my_object.sport_type)
@@ -809,32 +1021,56 @@ class PlayerLeagueModelUpdateAPIView(APIView):
             # return Response({"No data found"}, status=400)
 
     def update(self, request, *args, **kwargs):
+        career_history = request.data.get('career_history')
         # Get the instance to update
-        instance_id = request.data.get('id')  # Remove 'id' from data
+        instance_id = career_history.get('id')  # Remove 'id' from data
         try:
             instance = Club.objects.get(pk=instance_id)
         except Club.DoesNotExist:
             return Response({"error": "Instance does not exist"}, status=404)
 
         # Update the instance
-        serializer = ClubSerializer(instance, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        club_serializer = ClubSerializer(instance, data=career_history)
+        if club_serializer.is_valid():
+            club_serializer.save()
+            
+            endorsement_request = request.data.get('endorsement_request')
+            if(endorsement_request!=''):
+                print(endorsement_request) 
+                endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                if endorsement_request_serializer.is_valid():
+                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                    my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                    endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                    send_mail(
+                        subject='Endorsement Request',
+                        message='Endorsement request from player',
+                        from_email='athletescouting@gmail.com',
+                        recipient_list=[my_object.email],
+                        fail_silently=False,
+                    )
+                    endorsement_request_serializer.save()   
+                else:
+                    return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+            return Response({"message": "Data saved successfully"}, status=201)
+        return Response(club_serializer.errors, status=400)
     
 class PlayerTeamLeagueModelUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Assuming the request data contains a 'type' field indicating the model
-        data_type = request.data.get('flag')
+        career_history = request.data.get('career_history')
+        data_type = career_history.get('flag')
         # print(data_type)
 
         if data_type == 'league':
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
             # And so on...
 
             # Serialize the data for each model
@@ -844,21 +1080,51 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
             if league_serializer.is_valid():
                 # Perform any additional processing or actions as needed
                 # For example, save the data to the respective models
-                league_serializer.save()
+                
+                league_instance = league_serializer.save()
+                
+                # Extract 'id' from model1_instance
+                league_id = league_instance.id
+                
+                # Assign id to the appropriate field in Model2
+                player_data['league_id'] = league_id  
     
                 # Get the instance to update
-                instance_id = request.data.get('id')  # Remove 'id' from data
+                instance_id = data.get('id')  # Remove 'id' from data
                 try:
                     instance = Club.objects.get(pk=instance_id)
                 except Club.DoesNotExist:
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = ClubSerializer(instance, data=player_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                player_serializer = ClubSerializer(instance, data=player_data)
+                if player_serializer.is_valid():
+                    # player_career_history_instance = player_serializer.save()
+                    player_serializer.save()
+
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        print(endorsement_request) 
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                            my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                            endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement request from player',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[my_object.email],
+                                fail_silently=False,
+                            )
+                            endorsement_request_serializer.save()   
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+                    return Response({"message": "Data saved successfully"}, status=201)
+                return Response(player_serializer.errors, status=400)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -869,7 +1135,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
             
         elif data_type == 'team':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
             
             if 'league_id' in data:
                 # If 'id' is present, it's an update operation
@@ -893,7 +1159,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
             # And so on...
 
             # Serialize the data for each model
@@ -904,7 +1170,7 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                 team_instance = team_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 
                 # Assign id to the appropriate field in Model2
                 player_data['club_id'] = team_id   
@@ -915,11 +1181,40 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = ClubSerializer(instance, data=player_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                club_serializer = ClubSerializer(instance, data=player_data)
+                if club_serializer.is_valid():
+                    # player_career_history_instance = club_serializer.save()
+                    club_serializer.save()
+                    
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from player for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    # Return any relevant data or success message
+                    return Response({"message": "Data updated successfully"}, status=201)
+                else:
+                    return Response(club_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -930,12 +1225,12 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
         
         elif data_type == 'teamleague':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'players']}
+            player_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'games_played', 'club_goals', 'club_assists', 'club_passes', 'club_saved_goals', 'interceptions_per_game', 'takles_per_game', 'shots_per_game', 'key_passes_per_game', 'dribles_completed_per_game', 'clean_sheets_per_game', 'club_yellow_card', 'club_red_card', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -944,13 +1239,16 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
             # Validate the data for each model
             if team_serializer.is_valid() and league_serializer.is_valid():
                 team_instance = team_serializer.save()
-                league_serializer.save()
+                league_instance = league_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
+                league_id = league_instance.id
                 
                 # Assign id to the appropriate field in Model2
                 player_data['club_id'] = team_id    
+                player_data['league_id'] = league_id  
+                
                 instance_id = data.get('id')  # Remove 'id' from data
                 try:
                     instance = Club.objects.get(pk=instance_id)
@@ -958,11 +1256,40 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = ClubSerializer(instance, data=player_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                club_serializer = ClubSerializer(instance, data=player_data)
+                if club_serializer.is_valid():
+                    # player_career_history_instance = club_serializer.save()
+                    club_serializer.save()
+                    
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from player for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    # Return any relevant data or success message
+                    return Response({"message": "Data updated successfully"}, status=201)
+                else:
+                    return Response(club_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -1255,15 +1582,16 @@ class FootballCoachLicenseUpdateModelAPIView(APIView):
 class CoachCareerHistoryModelCreateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Assuming the request data contains a 'type' field indicating the model
-        data_type = request.data.get('flag')
+        career_history = request.data.get('career_history')
+        data_type = career_history.get('flag')
         # print(data_type)
 
         if data_type == 'league':
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1282,7 +1610,29 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                 coach_data['league_id'] = league_id    
                 coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
                 if coach_serializer.is_valid():
-                    coach_serializer.save()
+                    
+                    coach_career_history_instance = coach_serializer.save()
+
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request!=''):
+                        print(endorsement_request) 
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                 
+                            my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                            endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement request from coach',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[my_object.email],
+                                fail_silently=False,
+                            )
+                            endorsement_request_serializer.save()   
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
         
                     # Return any relevant data or success message
                     return Response({"message": "Data saved successfully"}, status=201)
@@ -1301,7 +1651,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
             
         elif data_type == 'team':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
             
             if 'league_id' in data:
                 # If 'id' is present, it's an update operation
@@ -1326,7 +1676,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'coach_id']}
             # And so on...
 
             # Serialize the data for each model
@@ -1337,13 +1687,39 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                 team_instance = team_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 
                 # Assign id to the appropriate field in Model2
                 coach_data['club_id'] = team_id    
                 coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
                 if coach_serializer.is_valid():
-                    coach_serializer.save()
+                    
+                    coach_career_history_instance = coach_serializer.save()
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from coach for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
                     # Return any relevant data or success message
                     return Response({"message": "Data saved successfully"}, status=201)
@@ -1362,12 +1738,12 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
         
         elif data_type == 'teamleague':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary', 'coach_id']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -1379,7 +1755,7 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                 league_instance = league_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 league_id = league_instance.id
                 
                 # Assign id to the appropriate field in Model2
@@ -1387,8 +1763,33 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                 coach_data['league_id'] = league_id    
                 coach_serializer = FootballCoachCareerHistorySerializer(data=coach_data)
                 if coach_serializer.is_valid():
-                    coach_serializer.save()
-        
+                    coach_career_history_instance = coach_serializer.save()
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from coach for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        
                     # Return any relevant data or success message
                     return Response({"message": "Data saved successfully"}, status=201)
                 else:
@@ -1411,13 +1812,14 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
         
 class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
+        career_history = request.data.get('career_history')
         # Check if 'id' is present in request data
-        if 'league_id' in request.data:
+        if 'league_id' in career_history:
             # If 'id' is present, it's an update operation
             flag=1
-            data = request.data
-            league_id = data.get('league_id')
-            sport_type = data.get('sport_type')
+            # data = request.data
+            league_id = career_history.get('league_id')
+            sport_type = career_history.get('sport_type')
             print(league_id)
             my_object = League.objects.get(id=league_id)
             print(my_object.sport_type)
@@ -1438,26 +1840,48 @@ class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
             return self.create(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-       
-        serializer = FootballCoachCareerHistorySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
+        career_history = request.data.get('career_history')
+        coach_career_history_serializer = FootballCoachCareerHistorySerializer(data=career_history)
+        if coach_career_history_serializer.is_valid():
+            coach_career_history_instance = coach_career_history_serializer.save()
+            endorsement_request = request.data.get('endorsement_request')
+            if(endorsement_request!=''):
+                print(endorsement_request) 
+                endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                if endorsement_request_serializer.is_valid():
+                    endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                 
+                    my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                    endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                    send_mail(
+                        subject='Endorsement Request',
+                        message='Endorsement request from coach',
+                        from_email='athletescouting@gmail.com',
+                        recipient_list=[my_object.email],
+                        fail_silently=False,
+                    )
+                    endorsement_request_serializer.save()   
+                else:
+                    return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+            return Response({"message": "Data saved successfully"}, status=201)
         
-        return Response(serializer.errors, status=400)
+        return Response(coach_career_history_serializer.errors, status=400)
     
 
 class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Check if 'id' is present in request data
-        value = request.data.get('league_id')
+        career_history = request.data.get('career_history')
+        value = career_history.get('league_id')
         
         if value != '':
             # If 'id' is present, it's an update operation
             flag=1
-            data = request.data
-            league_id = data.get('league_id')
-            sport_type = data.get('sport_type')
+            # data = request.data.get('career_history')
+            league_id = career_history.get('league_id')
+            sport_type = career_history.get('sport_type')
             print(league_id)
             my_object = League.objects.get(id=league_id)
             print(my_object.sport_type)
@@ -1480,32 +1904,56 @@ class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
             # return Response({"No data found"}, status=400)
 
     def update(self, request, *args, **kwargs):
+        career_history = request.data.get('career_history')
         # Get the instance to update
-        instance_id = request.data.get('id')  # Remove 'id' from data
+        instance_id = career_history.get('id')  # Remove 'id' from data
         try:
             instance = FootballCoachCareerHistory.objects.get(pk=instance_id)
         except FootballCoachCareerHistory.DoesNotExist:
             return Response({"error": "Instance does not exist"}, status=404)
 
         # Update the instance
-        serializer = FootballCoachCareerHistorySerializer(instance, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+        coach_career_history_serializer = FootballCoachCareerHistorySerializer(instance, data=career_history)
+        if coach_career_history_serializer.is_valid():
+            coach_career_history_serializer.save()
+            
+            endorsement_request = request.data.get('endorsement_request')
+            if(endorsement_request!=''):
+                print(endorsement_request) 
+                endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                if endorsement_request_serializer.is_valid():
+                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                    my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                    endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                    send_mail(
+                        subject='Endorsement Request',
+                        message='Endorsement request from coach',
+                        from_email='athletescouting@gmail.com',
+                        recipient_list=[my_object.email],
+                        fail_silently=False,
+                    )
+                    endorsement_request_serializer.save()   
+                else:
+                    return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+            return Response({"message": "Data saved successfully"}, status=201)
+        return Response(coach_career_history_serializer.errors, status=400)
     
 class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Assuming the request data contains a 'type' field indicating the model
-        data_type = request.data.get('flag')
+        career_history = request.data.get('career_history')
+        data_type = career_history.get('flag')
         # print(data_type)
 
         if data_type == 'league':
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
             # And so on...
 
             # Serialize the data for each model
@@ -1529,11 +1977,34 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                coach_serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if coach_serializer.is_valid():
+                    # player_career_history_instance = player_serializer.save()
+                    coach_serializer.save()
+
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        print(endorsement_request) 
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                 
+                            my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
+                            endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                  
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement request from coach',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[my_object.email],
+                                fail_silently=False,
+                            )
+                            endorsement_request_serializer.save()   
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+                                
+                    return Response({"message": "Data saved successfully"}, status=201)
+                return Response(coach_serializer.errors, status=400)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -1544,7 +2015,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
             
         elif data_type == 'team':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
             
             if 'league_id' in data:
                 # If 'id' is present, it's an update operation
@@ -1568,7 +2039,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
 
             # Separate the data based on the models
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
             # And so on...
 
             # Serialize the data for each model
@@ -1579,7 +2050,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                 team_instance = team_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 
                 # Assign id to the appropriate field in Model2
                 coach_data['club_id'] = team_id   
@@ -1590,11 +2061,40 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                coach_serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if coach_serializer.is_valid():
+                    # player_career_history_instance = club_serializer.save()
+                    coach_serializer.save()
+                    
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from coach for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    # Return any relevant data or success message
+                    return Response({"message": "Data updated successfully"}, status=201)
+                else:
+                    return Response(coach_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -1605,12 +2105,12 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
         
         elif data_type == 'teamleague':
              # Get the data sent through HTTP POST
-            data = request.data
+            data = career_history
 
             # Separate the data based on the models
             league_data = {key: data[key] for key in ['sport_type', 'league_name', 'league_type']}
             team_data = {key: data[key] for key in ['club_name', 'reg_id', 'country_name', 'sport_type']}
-            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'status', 'remarks', 'achievements', 'coach_id']}
+            coach_data = {key: data[key] for key in ['id', 'club_id', 'club_name', 'from_year', 'to_year', 'league_id', 'league_name', 'country_name', 'league_type', 'achievements', 'summary']}
 
             # Serialize the data for each model
             league_serializer = LeagueSerializer(data=league_data)
@@ -1622,7 +2122,7 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                 league_instance = league_serializer.save()
                 
                 # Extract 'id' from model1_instance
-                team_id = team_instance.id
+                team_id = team_instance.reg_id
                 league_id = league_instance.id
                 
                 # Assign id to the appropriate field in Model2
@@ -1635,11 +2135,40 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     return Response({"error": "Instance does not exist"}, status=404)
 
                 # Update the instance
-                serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=200)
-                return Response(serializer.errors, status=400)
+                coach_serializer = FootballCoachCareerHistorySerializer(instance, data=coach_data)
+                if coach_serializer.is_valid():
+                    # player_career_history_instance = club_serializer.save()
+                    coach_serializer.save()
+                    
+                    endorsement_request = request.data.get('endorsement_request')
+                    if(endorsement_request != ''):
+                        endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
+                        if endorsement_request_serializer.is_valid():
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from coach for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            endorsement_request_serializer.save()
+                        else:
+                            return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    # Return any relevant data or success message
+                    return Response({"message": "Data updated successfully"}, status=201)
+                else:
+                    return Response(coach_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # If any serializer data is invalid, return errors
                 errors = {}
@@ -1649,73 +2178,9 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     errors['league_errors'] = league_serializer.errors
                
                 return Response(errors, status=400)
-            
         else:
             return Response({"error": "Invalid data type provided"}, status=400)
         
-# class FootballAgentUpdateModelAPIView(APIView):
-#     def post(self, request, *args, **kwargs):
-#         # Check if 'id' is present in request data
-#         if 'license_id' in request.data:
-#             # If 'id' is present, it's an update operation
-#             print(request.data)
-#             return self.update(request, *args, **kwargs)
-#         else:
-#             # If 'id' is not present, it's a create operation
-#             return self.create(request, *args, **kwargs)
-
-#     def update(self, request, *args, **kwargs):
-#         # Get the instance to update
-#         instance_id = request.data.get('id')  # Remove 'id' from data
-#         try:
-#             instance = Agent.objects.get(pk=instance_id)
-#         except Agent.DoesNotExist:
-#             return Response({"error": "Instance does not exist"}, status=404)
-
-#         # Update the instance
-#         serializer = AgentSerializer(instance, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=200)
-#         return Response(serializer.errors, status=400)
-    
-#     def create(self, request, *args, **kwargs):
-#         data = request.data
-        
-#         # Separate the data based on the models
-#         license_data = {key: data[key] for key in ['license_name']}
-#         agent_data = {key: data[key] for key in ['id', 'user', 'license_name', 'certificate', 'country_name']}
-#         # And so on...
-
-#         # Serialize the data for each model
-#         license_serializer = SportLicenseSerializer(data=license_data)
-
-#         # Validate the data for each model
-#         if license_serializer.is_valid():
-#             # Perform any additional processing or actions as needed
-#             # For example, save the data to the respective models
-#             license_serializer.save()
-    
-#             # Get the instance to update
-#             instance_id = request.data.get('id')  # Remove 'id' from data
-#             try:
-#                 instance = Agent.objects.get(pk=instance_id)
-#             except Agent.DoesNotExist:
-#                 return Response({"error": "Instance does not exist"}, status=404)
-
-#             # Update the instance
-#             serializer = AgentSerializer(instance, data=agent_data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=200)
-#             return Response(serializer.errors, status=400)
-#         else:
-#             # If any serializer data is invalid, return errors
-#             errors = {}
-#             if not license_serializer.is_valid():
-#                 errors['license_errors'] = license_serializer.errors
-        
-#             return Response(errors, status=400)
 
 class AgentLicenseViewSet(viewsets.ModelViewSet):
     queryset = AgentLicense.objects.all()
@@ -1933,47 +2398,448 @@ class PlayersCoachesUnderAgentViewSet(viewsets.ModelViewSet):
     queryset = FootballPlayersAndCoachesUnderMe.objects.all()
     serializer_class = FootballPlayersAndCoachesUnderMeSerializer
     
-class SportProfileTypeAPIView(RetrieveUpdateAPIView):
-    queryset = SportProfileType.objects.all()
-    serializer_class = SportProfileTypeSerializer
+class GetPlayersCoachesEndorsementUnderAgentViewSet(viewsets.ModelViewSet):
+    queryset = FootballPlayersAndCoachesUnderMe.objects.all()
+    serializer_class = GetFootballPlayersAndCoachesUnderMeSerializer
+    
+    
+class PlayersCoachesEndorsementUnderAgentViewSet(viewsets.ModelViewSet):
+    queryset = FootballAgentEndorsementRequest.objects.all()
+    serializer_class = FootballAgentEndorsementRequestSerializer
+    
+    @action(detail=True, methods=['get'])
+    def request_list(self, request, pk=None):
+    #    users = self.get_object() # retrieve an object by pk provided
+       users = FootballAgentEndorsementRequest.objects.filter(to_endorser = pk).order_by('-id')
+    #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+       user_list_json = GetAgentEndorsementRequestSerializer(users, many=True)
+       return Response(user_list_json.data)
+   
 
-    def get_object(self):
-        # Override get_object to handle object retrieval
-        obj = super().get_object()
-        if obj:
-            return obj
+class GetFootballPlayersCoachesEndorsementUnderAgentViewSet(viewsets.ModelViewSet):
+    queryset = FootballAgentEndorsementRequest.objects.all()
+    serializer_class = GetAgentEndorsementRequestSerializer
+    
+    
+class AgentCareerHisrtoryAPIView(APIView):
+    def post(self, request):
+        # print(request.data)
+        # players_coaches_under_me=request.data.get('players_and_coaches_under_me')
+        # print(players_coaches_under_me)
+        # serializer = FootballPlayersAndCoachesUnderMeSerializer(data=players_coaches_under_me)
+        # if serializer.is_valid():
+        #     print(serializer.data)
+        #     # serializer.save()
+        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = AgentCareerHistorySerializer(data=request.data)
+        if serializer.is_valid():
+            # print(serializer.data)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class AgentCareerHistoryUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        players_and_coaches_under_me = request.data.get('players_and_coaches_under_me')
+        # print(players_and_coaches_under_me)
+        # Check if 'id' is present in request data
+        if players_and_coaches_under_me == '':
+            # If 'id' is not present, it's an update operation
+            return self.update(request, *args, **kwargs)
         else:
-            # If object does not exist, return None
-            return None
+            # If 'id' is present, it's a create operation      
+            print(players_and_coaches_under_me)    
+            # serializer = BulkCreateAgentPlayersCoachesUnderMeSerializer(data=players_and_coaches_under_me, many=True)
+
+            # # Validate the data for each model
+            # if serializer.is_valid():
+            #     serializer.save()
+            #     # return self.update(request, *args, **kwargs)
+            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+            
+            if isinstance(players_and_coaches_under_me, list):
+                serializer = FootballPlayersAndCoachesUnderMeSerializer(data=players_and_coaches_under_me, many=True)
+                if serializer.is_valid():
+                    try:
+                        with transaction.atomic():
+                            FootballPlayersAndCoachesUnderMe.objects.bulk_create([
+                                FootballPlayersAndCoachesUnderMe(**item) for item in serializer.validated_data
+                            ])
+                        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+                        return self.update(request, *args, **kwargs)
+                    except Exception as e:
+                        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        # Override update to handle update logic
-        instance = self.get_object()
-        if instance:
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        else:
-            # If object does not exist, return 404 Not Found
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-    def create(self, request, *args, **kwargs):
-        # Override create to handle create logic
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = AgentCareerHistory.objects.get(pk=instance_id)
+        except AgentCareerHistory.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+        
+        agent_career_history_data = {key: request.data[key] for key in ['id', 'from_year', 'to_year', 'company', 'contact_no', 'email', 'address_lane', 'zip', 'state', 'country', 'achievements', 'summary']}
+        # print(agent_career_history_data)
+        
+        # Update the instance
+        serializer = AgentCareerHistoryUpdateSerializer(instance, data=agent_career_history_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
     
+
+class AgentCreatePlayersAndCoachesEndorsementAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        players_coaches_under_me = request.data.get('players_coaches_under_me')
+        players_coaches_under_me_serializer = FootballPlayersAndCoachesUnderMeSerializer(data=players_coaches_under_me)
+        if players_coaches_under_me_serializer.is_valid():
+            player_coaches_under_me_instance = players_coaches_under_me_serializer.save()
+            endorsement_request = request.data.get('endorsement_request')
+            # return Response(players_coaches_under_me_serializer.data, status=status.HTTP_201_CREATED)
+            if isinstance(endorsement_request, list):
+                serializer = FootballAgentEndorsementRequestSerializer(data=endorsement_request, many=True)
+                if serializer.is_valid():
+                    for item_data in serializer.validated_data:
+                        # print(item_data['to_endorser'])
+                        if item_data['to_endorser'] is None:
+                            # random_str = generate_random_string(10)
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                # print(user_serializer.data)
+                                # print(user_instance)
+                                
+                                # Extract 'id' from model1_instance
+                                # user_instance_id = user_instance.id
+                                # print(user_instance_id)
+                
+                                # Assign id to the appropriate field in Model2
+                                item_data['to_endorser'] = user_instance
+                                item_data['agent_players_coaches_under_me'] = player_coaches_under_me_instance
+                                # print(item_data['to_endorser'])
+                                
+                                # print(serializer.validated_data)
+                                
+                                # user_serializer.save()
+                                # # Access the saved object instance
+                                # saved_object = user_serializer.instance
+                                # # Now you can access any attribute of the saved object
+                                # item_data['to_endorser'] = saved_object.id
+                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from agent for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[item_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            item_data['agent_players_coaches_under_me'] = player_coaches_under_me_instance
+                            
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement Request from Agent',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[item_data['to_endorser_email']],
+                                fail_silently=False,
+                            )
+                            
+                    try:
+                        with transaction.atomic():
+                            FootballAgentEndorsementRequest.objects.bulk_create([
+                                FootballAgentEndorsementRequest(**item) for item in serializer.validated_data
+                            ])
+                            # serializer.save()
+                            
+                        return Response(serializer.data, status=200)
+                            
+                        # return self.update(request, *args, **kwargs)
+                    except Exception as e:
+                        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(players_coaches_under_me_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         endorsement_request = request.data.get('endorsement_request')
+#         # print(players_and_coaches_under_me)
+#         # Check if 'id' is present in request data
+#         if endorsement_request == '':
+#             # If 'id' is not present, it's an update operation
+#             return self.update(request, *args, **kwargs)
+#         else:
+#             # If 'id' is present, it's a create operation      
+#             print(endorsement_request)    
+#             # serializer = BulkCreateAgentPlayersCoachesUnderMeSerializer(data=players_and_coaches_under_me, many=True)
+
+#             # # Validate the data for each model
+#             # if serializer.is_valid():
+#             #     serializer.save()
+#             #     # return self.update(request, *args, **kwargs)
+#             #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+#             # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+            
+#             if isinstance(endorsement_request, list):
+#                 serializer = FootballAgentEndorsementRequestSerializer(data=endorsement_request, many=True)
+#                 if serializer.is_valid():
+#                     try:
+#                         with transaction.atomic():
+#                             FootballAgentEndorsementRequest.objects.bulk_create([
+#                                 FootballAgentEndorsementRequest(**item) for item in serializer.validated_data
+#                             ])
+#                         # return Response(serializer.data, status=status.HTTP_201_CREATED)
+                        
+#                         # recipient_list = []
+
+#                         # for recipient in endorsement_request:
+#                         #     recipient_list.append(
+#                         #         recipient.to_endorser_email
+#                         #     )
+                        
+#                         for email_data in serializer.validated_data:
+#                             send_mail(
+#                                 subject='Endorsement Request',
+#                                 message='Endorsement Request from Agent',
+#                                 from_email='athletescouting@gmail.com',
+#                                 recipient_list=[email_data['to_endorser_email']],
+#                                 fail_silently=False,
+#                             )
+                            
+#                         return self.update(request, *args, **kwargs)
+#                     except Exception as e:
+#                         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             else:
+#                 return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
+
+#     def update(self, request, *args, **kwargs):
+#         # Get the instance to update
+#         instance_id = request.data.get('id')  # Remove 'id' from data
+#         try:
+#             instance = FootballPlayersAndCoachesUnderMe.objects.get(pk=instance_id)
+#         except FootballPlayersAndCoachesUnderMe.DoesNotExist:
+#             return Response({"error": "Instance does not exist"}, status=404)
+        
+#         agent_players_coaches_under_me_data = {key: request.data[key] for key in ['id', 'type', 'user_id', 'name', 'is_notable']}
+#         # print(agent_career_history_data)
+        
+#         # Update the instance
+#         serializer = FootballPlayersAndCoachesUnderMeSerializer(instance, data=agent_players_coaches_under_me_data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=200)
+#         return Response(serializer.errors, status=400)
+    
+class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        endorsement_request = request.data.get('endorsement_request')
+        # print(players_and_coaches_under_me)
+        # Check if 'id' is present in request data
+        if endorsement_request == '':
+            # If 'id' is not present, it's an update operation
+            return self.update(request, *args, **kwargs)
+        else:
+            # If 'id' is present, it's a create operation      
+            print(endorsement_request)    
+            
+            if isinstance(endorsement_request, list):
+                serializer = FootballAgentEndorsementRequestSerializer(data=endorsement_request, many=True)
+                if serializer.is_valid():
+                    for item_data in serializer.validated_data:
+                        # print(item_data['to_endorser'])
+                        if item_data['to_endorser'] is None:
+                            # random_str = generate_random_string(10)
+                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                # print(user_serializer.data)
+                                # print(user_instance)
+                                
+                                # Extract 'id' from model1_instance
+                                # user_instance_id = user_instance.id
+                                # print(user_instance_id)
+                
+                                # Assign id to the appropriate field in Model2
+                                item_data['to_endorser'] = user_instance
+                                # print(item_data['to_endorser'])
+                                
+                                # print(serializer.validated_data)
+                                
+                                # user_serializer.save()
+                                # # Access the saved object instance
+                                # saved_object = user_serializer.instance
+                                # # Now you can access any attribute of the saved object
+                                # item_data['to_endorser'] = saved_object.id
+                                
+                                send_mail(
+                                    subject='Endorsement Request',
+                                    message='Endorsement request from agent for registration',
+                                    from_email='athletescouting@gmail.com',
+                                    recipient_list=[item_data['to_endorser_email']],
+                                    fail_silently=False,
+                                )
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            send_mail(
+                                subject='Endorsement Request',
+                                message='Endorsement Request from Agent',
+                                from_email='athletescouting@gmail.com',
+                                recipient_list=[item_data['to_endorser_email']],
+                                fail_silently=False,
+                            )
+                            
+                    try:
+                        with transaction.atomic():
+                            FootballAgentEndorsementRequest.objects.bulk_create([
+                                FootballAgentEndorsementRequest(**item) for item in serializer.validated_data
+                            ])
+                            # serializer.save()
+                            
+                        return Response(serializer.data, status=200)
+                            
+                        # return self.update(request, *args, **kwargs)
+                    except Exception as e:
+                        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        # Get the instance to update
+        instance_id = request.data.get('id')  # Remove 'id' from data
+        try:
+            instance = FootballPlayersAndCoachesUnderMe.objects.get(pk=instance_id)
+        except FootballPlayersAndCoachesUnderMe.DoesNotExist:
+            return Response({"error": "Instance does not exist"}, status=404)
+        
+        agent_players_coaches_under_me_data = {key: request.data[key] for key in ['id', 'type', 'user_id', 'name', 'is_notable']}
+        # print(agent_career_history_data)
+        
+        # Update the instance
+        serializer = FootballPlayersAndCoachesUnderMeSerializer(instance, data=agent_players_coaches_under_me_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    
+
+# class AgentEndorsementRequestViewSet(viewsets.ModelViewSet):
+    
+#     queryset = FootballAgentEndorsementRequest.objects.all()
+#     serializer_class = GetAgentEndorsementRequestSerializer
+
+#     @action(detail=True, methods=['get'])
+#     def request_list(self, request, pk=None):
+#     #    users = self.get_object() # retrieve an object by pk provided
+#        users = FootballAgentEndorsementRequest.objects.filter(to_endorser = pk).order_by('-id')
+#     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+#        user_list_json = GetAgentEndorsementRequestSerializer(users, many=True)
+#        return Response(user_list_json.data)
+
+class SportProfileTypeStatusChangeCreateAndUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the instance to update
+        data = request.data
+        instance_id = data.get('user')
+        type = data.get('profile_type')
+        instance = SportProfileType.objects.get(user=instance_id, profile_type=type)
+        if instance:
+            serializer = SportProfileTypeSerializer(instance, data=data)
+            if serializer.is_valid():
+                player_object = SportProfileType.objects.get(user=instance_id, profile_type='Player')
+                player_object.status = 'Not Current'
+                player_object.save()
+                coach_object = SportProfileType.objects.get(user=instance_id, profile_type='Coach')
+                coach_object.status = 'Not Current'
+                coach_object.save()
+                agent_object = SportProfileType.objects.get(user=instance_id, profile_type='Agent')
+                agent_object.status = 'Not Current'
+                agent_object.save()
+                serializer.save()
+                return Response(serializer.data, status=200)
+            return Response(serializer.errors, status=400)
+        else:
+            # If 'user_id' is not present, it's a create operation
+            serializer = SportProfileTypeSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                if type == 'Player':
+                    instance_player = Player.objects.get(user=instance_id)
+                    if not instance_player:
+                        player_data = {key: data[key] for key in ['user']}
+                        serializer_player = PlayerSerializer(data=player_data)
+                        if serializer_player.is_valid():
+                            serializer_player.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_player.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)
+                    
+                elif type == 'Coach':
+                    instance_coach = FootballCoach.objects.get(user=instance_id)
+                    if not instance_coach:
+                        coach_data = {key: data[key] for key in ['user']}
+                        serializer_coach = FootballCoachSerializer(data=coach_data)
+                        if serializer_coach.is_valid():
+                            serializer_coach.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_coach.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)
+                    
+                elif type == 'Agent':
+                    instance_agent = Agent.objects.get(user=instance_id)
+                    if not instance_agent:
+                        agent_data = {key: data[key] for key in ['user']}
+                        serializer_agent = AgentSerializer(data=agent_data)
+                        if serializer_agent.is_valid():
+                            serializer_agent.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_agent.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)     
+                        
+            return Response(serializer.errors, status=400)
+        
 class SportProfileTypeCreateAndUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Get the instance to update
-        instance_id = request.data.get('user_id')
-        type = request.data.get('profile_type')
-        instance = SportProfileType.objects.get(user_id=instance_id, profile_type=type)
+        data = request.data
+        instance_id = data.get('user')
+        type = data.get('profile_type')
+        # player_object = SportProfileType.objects.get(user=instance_id, profile_type='Player')
+        # player_object.status = 'Not Current'
+        # player_object.save()
+        # coach_object = SportProfileType.objects.get(user=instance_id, profile_type='Coach')
+        # coach_object.status = 'Not Current'
+        # coach_object.save()
+        # agent_object = SportProfileType.objects.get(user=instance_id, profile_type='Agent')
+        # agent_object.status = 'Not Current'
+        # agent_object.save()
+        instance = SportProfileType.objects.get(user=instance_id, profile_type=type)
         if instance:
-            serializer = SportProfileTypeSerializer(instance, data=request.data)
+            serializer = SportProfileTypeSerializer(instance, data=data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=200)
@@ -1983,9 +2849,48 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
             serializer = SportProfileTypeSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=200)
+                if type == 'Player':
+                    instance_player = Player.objects.get(user=instance_id)
+                    if not instance_player:
+                        player_data = {key: data[key] for key in ['user']}
+                        serializer_player = PlayerSerializer(data=player_data)
+                        if serializer_player.is_valid():
+                            serializer_player.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_player.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)
+                    
+                elif type == 'Coach':
+                    instance_coach = FootballCoach.objects.get(user=instance_id)
+                    if not instance_coach:
+                        coach_data = {key: data[key] for key in ['user']}
+                        serializer_coach = FootballCoachSerializer(data=coach_data)
+                        if serializer_coach.is_valid():
+                            serializer_coach.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_coach.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)
+                    
+                elif type == 'Agent':
+                    instance_agent = Agent.objects.get(user=instance_id)
+                    if not instance_agent:
+                        agent_data = {key: data[key] for key in ['user']}
+                        serializer_agent = AgentSerializer(data=agent_data)
+                        if serializer_agent.is_valid():
+                            serializer_agent.save()
+                            return Response({{"message": "Data saved successfully"}}, status=200)
+                        else:
+                            return Response(serializer_agent.errors, status=400)
+                    else:
+                        return Response(serializer.data, status=200)     
+                        
             return Response(serializer.errors, status=400)
 
+        
 # added by Pijush
 #User = get_user_model()  # Get the User model dynamically
 

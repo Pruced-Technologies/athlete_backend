@@ -9,7 +9,7 @@ class TypeAdmin(admin.ModelAdmin):
 
 @admin.register(SportProfileType)
 class SportProfileTypeAdmin(admin.ModelAdmin):
-    list_display = ("id", "profile_type","is_active")
+    list_display = ("id", "profile_type", "status", "is_active", "user_id")
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
@@ -118,4 +118,16 @@ class AgentCareerHistoryAdmin(admin.ModelAdmin):
     
 @admin.register(FootballPlayersAndCoachesUnderMe)
 class FootballPlayersAndCoachesUnderMeAdmin(admin.ModelAdmin):
-    list_display = ("id", "sport_profile", "user_name")
+    list_display = ("id", "type", "name")
+    
+@admin.register(FootballAgentEndorsementRequest)
+class FootballAgentEndorsementRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "to_endorser_email", "to_endorser", "from_endorsee", "type", "status")
+    
+@admin.register(FootballPlayerEndorsementRequest)
+class FootballPlayerEndorsementRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "to_endorser_email", "to_endorser", "from_endorsee", "type", "status")
+    
+@admin.register(FootballCoachEndorsementRequest)
+class FootballCoachEndorsementRequestAdmin(admin.ModelAdmin):
+    list_display = ("id", "to_endorser_email", "to_endorser", "from_endorsee", "type", "status")

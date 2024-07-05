@@ -63,7 +63,7 @@ class SportProfileTypeSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = SportProfileType
-        fields = ('id','profile_type','is_active','user_id')
+        fields = '__all__'
         extra_kwargs = {'user_id': {'required': False}}
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -108,22 +108,31 @@ class CustomUserSerializer(serializers.ModelSerializer):
         
     def get_age(self, obj):
         return obj.calculate_age()
+    
+class GetFootballPlayerEndorsementRequestSerializer(serializers.ModelSerializer):
+    to_endorser = CustomUserSerializer()
+    from_endorsee = CustomUserSerializer()
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballPlayerEndorsementRequest
+        fields = "__all__"
+    
+class FootballPlayerEndorsementRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballPlayerEndorsementRequest
+        fields = "__all__"
 
 class ClubSerializer(serializers.ModelSerializer):
+    endorsement_request = GetFootballPlayerEndorsementRequestSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = Club
         fields = '__all__'
         extra_kwargs = {'players': {'required': False}}
-    
-# class PlayerCareerHistorySerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         ordering = ['-id']
-#         model = PlayerCareerHistory
-#         fields = ("id", "debut_date", "last_date", "league_name", "club_name", "player_id")
-#         extra_kwargs = {'player_id': {'required': False}}
 
 # class AcheivementsSerializer(serializers.ModelSerializer):
 
@@ -185,44 +194,116 @@ class AgentLicenseSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {'agent': {'required': False}}
         
-class AgentCareerHistorySerializer(serializers.ModelSerializer):
+class AgentCareerHistoryUpdateSerializer(serializers.ModelSerializer):
+    # players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True)
 
     class Meta:
-        ordering = ['-id']
+        # ordering = ['-id']
         model = AgentCareerHistory
         fields = '__all__'
-        extra_kwargs = {'agent': {'required': False}}
+        # extra_kwargs = {'players_and_coaches_under_me': {'required': False}}
         
-class FootballPlayersAndCoachesUnderMeSerializer(serializers.ModelSerializer):
+class FootballAgentEndorsementRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
-        ordering = ['-id']
+        # ordering = ['-id']
+        model = FootballAgentEndorsementRequest
+        fields = "__all__"
+        extra_kwargs = {'agent_players_coaches_under_me': {'required': False}}
+               
+class GetFootballAgentEndorsementRequestSerializer(serializers.ModelSerializer):
+    to_endorser = CustomUserSerializer()
+    from_endorsee = CustomUserSerializer()
+    class Meta:
+        # ordering = ['-id']
+        model = FootballAgentEndorsementRequest
+        fields = "__all__"
+        extra_kwargs = {'agent_players_coaches_under_me': {'required': False}}
+      
+        
+class FootballPlayersAndCoachesUnderAgentSerializer(serializers.ModelSerializer):
+    agent_career_history = AgentCareerHistoryUpdateSerializer()
+    class Meta:
+        # ordering = ['-id']
         model = FootballPlayersAndCoachesUnderMe
         fields = "__all__"
-        extra_kwargs = {'coach': {'required': False}}
+        # extra_kwargs = {'endorsement_request': {'required': False}}
+        
+class GetAgentEndorsementRequestSerializer(serializers.ModelSerializer):
+    from_endorsee = CustomUserSerializer()
+    agent_players_coaches_under_me = FootballPlayersAndCoachesUnderAgentSerializer()
+    class Meta:
+        # ordering = ['-id']
+        model = FootballAgentEndorsementRequest
+        fields = "__all__"
+        # extra_kwargs = {'agent_players_coaches_under_me': {'required': False}}
+        
+class FootballPlayersAndCoachesUnderMeSerializer(serializers.ModelSerializer):
+    endorsement_request = FootballAgentEndorsementRequestSerializer(many=True, read_only=True)
+    class Meta:
+        # ordering = ['-id']
+        model = FootballPlayersAndCoachesUnderMe
+        fields = "__all__"
+        extra_kwargs = {'endorsement_request': {'required': False}}
+        
+class GetFootballPlayersAndCoachesUnderMeSerializer(serializers.ModelSerializer):
+    endorsement_request = GetFootballAgentEndorsementRequestSerializer(many=True, read_only=True)
+    class Meta:
+        # ordering = ['-id']
+        model = FootballPlayersAndCoachesUnderMe
+        fields = "__all__"
+        extra_kwargs = {'endorsement_request': {'required': False}}
+        
+# class BulkAgentPlayersCoachesUnderMeSerializer(serializers.ListSerializer):
+#     def create(self, validated_data):
+#         players_coaches_under_me = [FootballPlayersAndCoachesUnderMe(**item) for item in validated_data]
+#         return FootballPlayersAndCoachesUnderMe.objects.bulk_create(players_coaches_under_me)
+
+# class BulkCreateAgentPlayersCoachesUnderMeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = FootballPlayersAndCoachesUnderMe
+#         fields = '__all__'
+#         list_serializer_class = BulkAgentPlayersCoachesUnderMeSerializer
+        
+class AgentCareerHistorySerializer(serializers.ModelSerializer):
+    players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True)
+
+    class Meta:
+        # ordering = ['-id']
+        model = AgentCareerHistory
+        fields = '__all__'
+        # extra_kwargs = {'players_and_coaches_under_me': {'required': False}}
+        
+    def create(self, validated_data):
+        players_and_coaches_under_me_data = validated_data.pop('players_and_coaches_under_me')
+        agent_career_history = AgentCareerHistory.objects.create(**validated_data)
+        for players_and_coaches_data in players_and_coaches_under_me_data:
+            FootballPlayersAndCoachesUnderMe.objects.create(agent_career_history=agent_career_history, **players_and_coaches_data)
+        return agent_career_history
+
 
 class AgentSerializer(serializers.ModelSerializer):
     my_license = AgentLicenseSerializer(many=True, read_only=True)
     career_history = AgentCareerHistorySerializer(many=True, read_only=True)
-    players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
+    # players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
         model = Agent
         fields = "__all__"
-        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}, 'players_and_coaches_under_me': {'required': False}}
+        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}}
 
 class GetAgentSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     my_license = AgentLicenseSerializer(many=True, read_only=True)
     career_history = AgentCareerHistorySerializer(many=True, read_only=True)
-    players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
+    # players_and_coaches_under_me = FootballPlayersAndCoachesUnderMeSerializer(many=True, read_only=True)
     
     class Meta:
         ordering = ['-id']
         model = Agent
         fields = "__all__"
-        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}, 'players_and_coaches_under_me': {'required': False}}
+        extra_kwargs = {'my_license': {'required': False}, 'career_history': {'required': False}}
 
 # class AgentOutsideSerializer(serializers.ModelSerializer):
 
@@ -301,9 +382,25 @@ class FootballTournamentsSerializer(serializers.ModelSerializer):
         model = FootballTournaments
         fields = ("id", "tournaments_name", "no_of_times", "coach_career_history_id","coach_id")
         extra_kwargs = {'coach_career_history_id': {'required': False}, 'coach_id': {'required': False}}
+        
+class GetFootballCoachEndorsementRequestSerializer(serializers.ModelSerializer):
+    to_endorser = CustomUserSerializer()
+    from_endorsee = CustomUserSerializer()
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballCoachEndorsementRequest
+        fields = "__all__"
+        
+class FootballCoachEndorsementRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballCoachEndorsementRequest
+        fields = "__all__"
 
 class FootballCoachCareerHistorySerializer(serializers.ModelSerializer):
-    # tournaments_name_won_as_player = FootballTournamentsSerializer(many=True, read_only=True)
+    endorsement_request = GetFootballCoachEndorsementRequestSerializer(many=True, read_only=True)
 
     class Meta:
         ordering = ['-id']
@@ -545,7 +642,7 @@ class PostItemSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = PostItem
-        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")
+        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type", "post_type")
 
 class GetPostItemSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -555,14 +652,14 @@ class GetPostItemSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = PostItem
-        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type")
+        fields = ("id", "user", "picture", "description", "posted", "likes", "comments", "video_link", "type", "post_type")
 
 class NewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         ordering = ['-id']
         model = News
-        fields = ("id", "user", "posted", "title", "content", "picture", "start_date", "end_date")
+        fields = '__all__'
 
 class GetNewsSerializer(serializers.ModelSerializer):
     user=CustomUserSerializer()
@@ -570,7 +667,7 @@ class GetNewsSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = News
-        fields = ("id", "user", "posted", "title", "content", "picture", "start_date", "end_date")
+        fields = '__all__'
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
