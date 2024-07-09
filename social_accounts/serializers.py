@@ -6,7 +6,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 
 class GoogleSignInSerializer(serializers.Serializer):
-    access_token=serializers.CharField(min_length=6)
+    access_token=serializers.CharField()
 
 
     def validate_access_token(self, access_token):
@@ -18,7 +18,7 @@ class GoogleSignInSerializer(serializers.Serializer):
             raise serializers.ValidationError("this token has expired or invalid please try again")
         
         if user_data['aud'] != settings.GOOGLE_CLIENT_ID:
-                raise AuthenticationFailed('Could not verify user.')
+            raise AuthenticationFailed('Could not verify user.')
 
         user_id=user_data['sub']
         email=user_data['email']
@@ -38,11 +38,12 @@ class FacebookSocialAuthSerializer(serializers.Serializer):
         try:
             user_id = user_data['id']
             email = user_data['email']
-            name = user_data['name']
+            first_name = user_data['first_name']
+            last_name = user_data['last_name']
             provider = 'facebook'
-            name_list = name.split(' ') 
-            first_name = name_list[0]
-            last_name = name_list[1]
+            # name_list = name.split(' ') 
+            # first_name = name_list[0]
+            # last_name = name_list[1]
             
             return register_social_user(provider, email, first_name, last_name)
         
@@ -55,7 +56,7 @@ class FacebookSocialAuthSerializer(serializers.Serializer):
         except Exception as identifier:
 
             raise serializers.ValidationError(
-                'The token  is invalid or expired. Please login again.'
+                identifier
             )
 
 

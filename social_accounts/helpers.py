@@ -17,6 +17,7 @@ class Google():
         try:
             id_info=id_token.verify_oauth2_token(access_token, requests.Request())
             if 'accounts.google.com' in id_info['iss']:
+                print(id_info)
                 return id_info
         except:
             return "the token is either invalid or has expired"
@@ -32,8 +33,11 @@ class Facebook:
         validate method Queries the facebook GraphAPI to fetch the user info
         """
         try:
+            # print(auth_token)
             graph = facebook.GraphAPI(access_token=auth_token)
-            profile = graph.request('/me?fields=name,email')
+            # print(graph)
+            profile = graph.request('/me?fields=first_name,last_name,email')
+            # print(profile)
             return profile
         except:
             return "The token is invalid or expired."
@@ -63,7 +67,7 @@ def register_social_user(provider, email, first_name, last_name):
             }
         else:
             raise AuthenticationFailed(
-                detail=f"please continue your login with {old_user[0].auth_provider}"
+                detail=f"You are registered with {old_user[0].auth_provider}. Please continue your login with {old_user[0].auth_provider}"
             )
     else:
         contact_no = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
