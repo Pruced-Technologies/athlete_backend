@@ -11,8 +11,8 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError("Email is required")
         
-        if not extra_fields['contact_no']:
-            raise ValueError("Contact number is required")
+        if not extra_fields['username']:
+            raise ValueError("Username is required")
         
         # if not extra_fields['username']:
         #     raise ValueError("Username is required")
@@ -29,6 +29,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff',True)
         extra_fields.setdefault('is_superuser',True)
         extra_fields.setdefault('is_active',True)
+        extra_fields.setdefault('is_verified',True)
+        extra_fields.setdefault('is_subscribed',True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff to True')

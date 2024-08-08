@@ -17,6 +17,7 @@ from rest_framework_simplejwt.views import (
 
 router = routers.DefaultRouter()
 router.register(r'user', UserViewSet, basename='user')
+router.register(r'instituitioninfo', InstituitionViewSet, basename='instituitioninfo')
 router.register(r'sportprofiletype', SportProfileTypeViewSet, basename='sportprofiletype')
 router.register(r'sportprofiletype/:pk/request_list', SportProfileTypeViewSet, basename='sportprofiletypepk')
 router.register(r'address', AddressViewSet, basename='address')
@@ -63,6 +64,7 @@ router.register(r'country', CountryViewSet, basename='country')
 router.register(r'sportlicense', SportLicenseViewSet, basename='sportlicense')
 router.register(r'coachlicense', CoachLicenseViewSet, basename='coachlicense')
 router.register(r'agentlicense', AgentLicenseViewSet, basename='agentlicense')
+router.register(r'instituitionlicense', FootballClubLicenseViewSet, basename='instituitionlicense')
 router.register(r'agentcareerhistory', AgentCareerHistoryViewSet, basename='agentcareerhistory')
 router.register(r'playerandcoachesunderagent', PlayersCoachesUnderAgentViewSet, basename='playerandcoachesunderagent')
 router.register(r'playerandcoachesendorsementunderagent', PlayersCoachesEndorsementUnderAgentViewSet, basename='playerandcoachesendorsementunderagent')
@@ -79,7 +81,9 @@ router.register(r'condiotioninglog', ConditioningLogViewSet, basename='condiotio
 urlpatterns = [
     # path('', views.getRoutes),
     path('register/', registerView.as_view(), name='register'),
-    path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('email-verify/', VerifyEmail.as_view(), name="email-verify"),
+    path('login/', LoginAPIView.as_view(), name="login"),
+    # path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('search/player', PlayerSearchViewSet.as_view(), name='search_player'),
@@ -111,8 +115,11 @@ urlpatterns = [
     path('createplayerscoachesendorsementunderagent/', AgentCreatePlayersAndCoachesEndorsementAPIView.as_view(), name='createplayerscoachesendorsementunderagent'),
     path('sportprofilechangeuserstatus/', SportProfileTypeStatusChangeCreateAndUpdateAPIView.as_view(), name='sportprofilechangeuserstatus'),
     path('sportprofile/', SportProfileTypeCreateAndUpdateAPIView.as_view(), name='sportprofile'),
-    # path('get/comments/', GetPostCommentsViewSet.as_view(), name='get_comments_list'),
-    #path('opportunities/', views.list_opportunities, name='list-opportunities'),
+    path('instituitionlicensecreate/', FootballClubLicenseCreateModelAPIView.as_view(), name='footballcoachlicensecreate'),
+    path('instituitionlicenseupdate/', FootballClubLicenseUpdateModelAPIView.as_view(), name='footballcoachlicenseupdate'),
+    path('instituitioncareerhistorycreate/', FootballClubHistoryCreateAPIView.as_view(), name='instituitioncareerhistorycreate'),
+    path('instituitioncareerhistoryupdate/', FootballClubHistoryUpdateAPIView.as_view(), name='instituitioncareerhistoryupdate'),
+    path('get/instituition/<slug:slug>/', GetInstitutionViewSet.as_view(), name='get_instituition'),
     path('', include(router.urls)),
     
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

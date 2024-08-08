@@ -34,9 +34,9 @@ class Country(models.Model):
     
 class League(models.Model):
     id = models.AutoField(primary_key=True)
-    sport_type = models.TextField()
-    league_name = models.CharField(max_length=255)
-    league_type = models.CharField(max_length=100)
+    sport_type = models.TextField(blank=True, null=True)
+    league_name = models.CharField(max_length=255, blank=True, null=True)
+    league_type = models.CharField(max_length=100, blank=True, null=True)
     # country_id = models.ManyToManyField(Country, related_name='leagues', blank=True)
     
     def __str__(self):
@@ -63,13 +63,13 @@ class SportLicense(models.Model):
 
 class CustomUser(AbstractUser):
     username = models.CharField(max_length=50,null=True,blank=True)
-    # username = None
+    club_name = models.TextField(null=True,blank=True)
     email = models.EmailField(unique=True)
     sport_type = models.CharField(max_length=50,null=True,blank=True)
     # sport_profile_type = models.ManyToManyField(SportProfileType, blank=True)
     height = models.IntegerField(null=True,blank=True)
     weight = models.IntegerField(null=True,blank=True)
-    contact_no = models.CharField(max_length=12,unique=True)
+    contact_no = models.CharField(max_length=14,null=True,blank=True)
     # present_address = models.ForeignKey(Address, on_delete=models.CASCADE,related_name='present_address',null=True,blank=True)
     # permanent_address = models.ForeignKey(Address, on_delete=models.CASCADE,related_name='permanent_address',null=True,blank=True)
     dob = models.DateField(null=True,blank=True)
@@ -78,9 +78,19 @@ class CustomUser(AbstractUser):
     profile_photo_url = models.TextField(blank=True,null=True)
     citizenship = models.CharField(max_length=100,blank=True,null=True)
     reg_id = models.CharField(max_length=50,blank=True,null=True)
-    # password2 = models.CharField(max_length=100,blank=True,null=True)
-    # is_open_for_hiring = models.BooleanField(null=True,blank=True)
     auth_provider=models.CharField(max_length=50, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
+    is_verified = models.BooleanField(
+        ("verified"),
+        default=False,
+    )
+    is_subscribed = models.BooleanField(
+        ("subscribed"),
+        default=False,
+    )
+    is_flag = models.BooleanField(
+        ("flag"),
+        default=False,
+    )
     
     def calculate_age(self):
         if self.dob:
@@ -92,10 +102,17 @@ class CustomUser(AbstractUser):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['contact_no']
+    REQUIRED_FIELDS = ['username']
     
     def tokens(self):    
         refresh = RefreshToken.for_user(self)
+            
+        refresh['first_name'] = self.first_name
+        refresh['last_name'] = self.last_name
+        refresh['username'] = self.username
+        refresh['sport_type'] = self.sport_type
+        refresh['is_flag'] = self.is_flag
+        
         return {
             "refresh":str(refresh),
             "access":str(refresh.access_token)
@@ -175,6 +192,11 @@ class Address(models.Model):
 class FootballClub(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club', null=True, blank=True)
+    # address = models.CharField(max_length=255,null=True,blank=True)
+    # city = models.CharField(max_length=100,null=True,blank=True)
+    # country = models.CharField(max_length=100,null=True,blank=True)
+    website = models.CharField(max_length=100,null=True,blank=True)
+    # established_year = models.PositiveIntegerField(null=True,blank=True)
     # founded_in = models.DateField(null=True,blank=True)
 
     def __str__(self):
@@ -260,7 +282,6 @@ class Club(models.Model):
     
 class FootballPlayerEndorsementRequest(models.Model):
     id = models.AutoField(primary_key=True)
-    # from_requester = models.IntegerField(null=True,blank=True)
     to_endorser_email = models.CharField(max_length=255,null=True,blank=True)
     to_endorser = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player_club_endorser', null=True,blank=True)
     from_endorsee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='player_endorsee', null=True,blank=True)
@@ -316,7 +337,8 @@ class FootballCoachCareerHistory(models.Model):
     to_year = models.IntegerField(null=True,blank=True)
     league_type = models.CharField(max_length=50,null=True,blank=True)
     country_name = models.CharField(max_length=25,null=True, blank=True)
-    club_id = models.IntegerField(null=True, blank=True)
+    # club_id = models.IntegerField(null=True, blank=True)
+    club_id = models.CharField(max_length=255,null=True,blank=True)
     club_name = models.CharField(max_length=225,null=True, blank=True)
     league_id = models.IntegerField(null=True, blank=True)
     league_name = models.CharField(max_length=225,null=True, blank=True)
@@ -328,7 +350,7 @@ class FootballCoachCareerHistory(models.Model):
 
     def __str__(self):
         # return self.club_name
-        return "%s %s %s" % (self.club_name, self.league_name)
+        return "%s %s" % (self.club_name, self.league_name)
     
 class FootballCoachEndorsementRequest(models.Model):
     id = models.AutoField(primary_key=True)
@@ -343,7 +365,8 @@ class FootballCoachEndorsementRequest(models.Model):
     coach_career_history = models.ForeignKey(FootballCoachCareerHistory, on_delete=models.CASCADE, related_name='endorsement_request', blank=True, null=True)
 
     def __str__(self):
-        return f"{self.from_endorsee} {self.to_endorser} {self.type}"
+        # return f"{self.from_endorsee} {self.to_endorser} {self.type}"
+        return "%s %s" % (self.from_endorsee, self.to_endorser)
     
 class FootballTournaments(models.Model):
     id = models.AutoField(primary_key=True)
@@ -357,7 +380,10 @@ class FootballTournaments(models.Model):
 
 class FootballClubHistory(models.Model):
     id = models.AutoField(primary_key=True)
-    period = models.CharField(max_length=25,null=True, blank=True)
+    # period = models.CharField(max_length=25,null=True, blank=True)
+    from_year = models.IntegerField(null=True,blank=True)
+    to_year = models.IntegerField(null=True,blank=True)
+    league_id = models.IntegerField(null=True,blank=True)
     league_name = models.CharField(max_length=255,null=True, blank=True)
     games_played = models.IntegerField(null=True, blank=True)
     games_won = models.IntegerField(null=True, blank=True)
@@ -365,22 +391,35 @@ class FootballClubHistory(models.Model):
     games_tied = models.IntegerField(null=True, blank=True)
     points = models.IntegerField(null=True, blank=True)
     position = models.CharField(max_length=100,null=True, blank=True)
+    tournament = models.CharField(max_length=255,null=True, blank=True)
+    achievement = models.TextField(null=True,blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
     # club_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
 
     def __str__(self):
         # return self.acheivement_name
-        return "%s %s" % (self.league_name, self.period)
+        return "%s %s %s" % (self.league_name, self.from_year, self.to_year)
     
 class FootballClubOfficeBearer(models.Model):
     id = models.AutoField(primary_key=True)
     position = models.CharField(max_length=100,null=True, blank=True)
+    department = models.CharField(max_length=100,null=True, blank=True)
     name = models.CharField(max_length=255,null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone_number = models.CharField(max_length=20,null=True, blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='office_bearer',null=True, blank=True)
     # club_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='office_bearer',null=True, blank=True)
 
     def __str__(self):
         return "%s %s" % (self.name, self.position)
+    
+class FootballClubVerificationDocument(models.Model):
+    id = models.AutoField(primary_key=True)
+    license_id = models.IntegerField(null=True, blank=True)
+    document_type = models.CharField(max_length=100, default='jpg')
+    document_name = models.CharField(max_length=255, null=True, blank=True)
+    document_file = models.ImageField(upload_to="club_document",null=True,blank=True)
+    club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='verification_document', null=True, blank=True)
 
 # class Acheivements(models.Model):
 #     id = models.AutoField(primary_key=True)

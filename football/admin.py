@@ -57,7 +57,7 @@ class FootballClubAdmin(admin.ModelAdmin):
 
 @admin.register(FootballClubHistory)
 class FootballClubHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "period", "league_name", "games_played", "games_won", "games_lost", "games_tied", "points", "position")
+    list_display = ("id", "from_year", "to_year", "league_name", "games_played", "games_won", "games_lost", "games_tied", "points", "position")
 
 @admin.register(FootballClubOfficeBearer)
 class FootballClubOfficeBearerAdmin(admin.ModelAdmin):

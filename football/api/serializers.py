@@ -2,6 +2,61 @@ from rest_framework import serializers
 from football.models import *
 import django.contrib.auth.password_validation as validators
 from django.core.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed
+from django.contrib import auth
+
+class EmailVerificationSerializer(serializers.ModelSerializer):
+    token = serializers.CharField(max_length=555)
+
+    class Meta:
+        model = CustomUser
+        fields = ['token']
+        
+class LoginSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(max_length=255, min_length=3)
+    password = serializers.CharField(
+        max_length=68, min_length=6, write_only=True)
+    username = serializers.CharField(
+        max_length=255, min_length=3, read_only=True)
+
+    tokens = serializers.SerializerMethodField()
+
+    def get_tokens(self, obj):
+        user = CustomUser.objects.get(email=obj['email'])
+
+        return {
+            'refresh': user.tokens()['refresh'],
+            'access': user.tokens()['access']
+        }
+
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'password', 'username', 'tokens']
+
+    def validate(self, attrs):
+        email = attrs.get('email', '')
+        password = attrs.get('password', '')
+        filtered_user_by_email = CustomUser.objects.filter(email=email)
+        user = auth.authenticate(email=email, password=password)
+
+        if filtered_user_by_email.exists() and filtered_user_by_email[0].auth_provider != 'email':
+            raise AuthenticationFailed(
+                detail='Please continue your login using ' + filtered_user_by_email[0].auth_provider)
+
+        if not user:
+            raise AuthenticationFailed('Invalid credentials, try again')
+        if not user.is_active:
+            raise AuthenticationFailed('Account disabled, contact admin')
+        if not user.is_verified:
+            raise AuthenticationFailed('Email is not verified')
+
+        return {
+            'email': user.email,
+            'username': user.username,
+            'tokens': user.tokens
+        }
+
+        return super().validate(attrs)
 
 class SportTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,7 +79,7 @@ class LeagueSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = League
-        fields = ("id", "sport_type", "league_name", "league_type")
+        fields = "__all__"
         
 class CountrySerializer(serializers.ModelSerializer):
     # leagues = LeagueSerializer(many=True, read_only=True)
@@ -119,6 +174,7 @@ class GetFootballPlayerEndorsementRequestSerializer(serializers.ModelSerializer)
         fields = "__all__"
     
 class FootballPlayerEndorsementRequestSerializer(serializers.ModelSerializer):
+    # reg_id = serializers.CharField(max_length=255, read_only=True)
 
     class Meta:
         ordering = ['-id']
@@ -147,7 +203,7 @@ class FootballClubOfficeBearerSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballClubOfficeBearer
-        fields = ("id", "position", "name", "club_id")
+        fields = "__all__"
         extra_kwargs = {'club_id': {'required': False}}
 
 class FootballClubHistorySerializer(serializers.ModelSerializer):
@@ -155,13 +211,22 @@ class FootballClubHistorySerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballClubHistory
-        fields = ("id", "period", "league_name", "games_played", "games_won", "games_lost", "games_tied", "points", "position", "club_id")
+        fields = "__all__"
+        extra_kwargs = {'club_id': {'required': False}}
+        
+class FootballClubVerificationDocumentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballClubVerificationDocument
+        fields = "__all__"
         extra_kwargs = {'club_id': {'required': False}}
 
 class FootballClubSerializer(serializers.ModelSerializer):
     # user = ClubUserSerializer()
     office_bearer = FootballClubOfficeBearerSerializer(many=True, read_only=True)
     club_history = FootballClubHistorySerializer(many=True, read_only=True)
+    verification_document = FootballClubVerificationDocumentSerializer(many=True, read_only=True)
     # club_acheivements = AcheivementsSerializer(many=True, read_only=True)
     # player_current_club_inside = PlayerSerializer(many=True, read_only=True)
     # coach_current_club_inside = FootballCoachSerializer(many=True, read_only=True)
@@ -169,8 +234,8 @@ class FootballClubSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballClub
-        fields = ("id", "user","office_bearer","club_history")
-        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}}
+        fields = "__all__"
+        extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}, 'verification_document': {'required': False}}
 
 class GetFootballClubSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
@@ -183,7 +248,7 @@ class GetFootballClubSerializer(serializers.ModelSerializer):
     class Meta:
         ordering = ['-id']
         model = FootballClub
-        fields = ("id", "user","office_bearer","club_history")
+        fields = "__all__"
         extra_kwargs = {'office_bearer': {'required': False}, 'club_history': {'required': False}}
         
 class AgentLicenseSerializer(serializers.ModelSerializer):
