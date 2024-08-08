@@ -24,6 +24,6 @@ urlpatterns = [
     path('football/', include('football.urls')),
     path('football/api/', include('football.api.urls')),
     # path('chat/', include('chat.urls')),
-    path('api/auth/', include('social_accounts.urls')),
+    path('api/auth/', include('social_accounts.urls'))
     # path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
