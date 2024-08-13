@@ -31,6 +31,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_active',True)
         extra_fields.setdefault('is_verified',True)
         extra_fields.setdefault('is_subscribed',True)
+        extra_fields.setdefault('is_flag',True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff to True')

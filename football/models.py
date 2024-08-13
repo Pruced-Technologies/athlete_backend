@@ -235,7 +235,7 @@ class PlayerVideoClip(models.Model):
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='video_clip', blank=True, null=True)
 
     def __str__(self):
-        return self.title
+        return self.clip_url
 
 # class PlayerCareerHistory(models.Model):
 #     id = models.AutoField(primary_key=True)
