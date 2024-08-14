@@ -3151,6 +3151,24 @@ class ChangeSportProfileTypeAPIView(APIView):
             instance = SportProfileType.objects.get(user=instance_id, profile_type=type)
             serializer = SportProfileTypeSerializer(instance, data=data)
             if serializer.is_valid():
+                try:
+                    player_object = SportProfileType.objects.get(user=instance_id, profile_type='Player')
+                    player_object.status = 'Not Current'
+                    player_object.save()
+                except SportProfileType.DoesNotExist:
+                    pass
+                try:
+                    coach_object = SportProfileType.objects.get(user=instance_id, profile_type='Coach')
+                    coach_object.status = 'Not Current'
+                    coach_object.save()
+                except SportProfileType.DoesNotExist:
+                    pass
+                try:
+                    agent_object = SportProfileType.objects.get(user=instance_id, profile_type='Agent')
+                    agent_object.status = 'Not Current'
+                    agent_object.save()
+                except SportProfileType.DoesNotExist:
+                    pass
                 serializer.save()
                 return Response(serializer.data, status=200)
             return Response(serializer.errors, status=400)
@@ -3262,16 +3280,17 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
                         user_instance.is_flag = True
                         user_instance.save() 
                     if type == 'Player':
+                        player_data = {key: data[key] for key in ['user']}
                         try:
                             instance_player = Player.objects.get(user=instance_id)
-                            player_data = {key: data[key] for key in ['user']}
+                            # player_data = {key: data[key] for key in ['user']}
                             serializer_player = PlayerSerializer(instance_player, data=player_data)
                             if serializer_player.is_valid():
                                 serializer_player.save()
                                 return Response({"message": "Data updated successfully"}, status=200)
                             return Response(serializer_player.errors, status=400)
                         except Player.DoesNotExist:
-                            player_data = {key: data[key] for key in ['user']}
+                            # player_data = {key: data[key] for key in ['user']}
                             serializer_player = PlayerSerializer(data=player_data)
                             if serializer_player.is_valid():
                                 serializer_player.save()
@@ -3279,48 +3298,57 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
                             return Response(serializer_player.errors, status=400)
                         
                     elif type == 'Coach':
+                        coach_data = {key: data[key] for key in ['user']}
                         try:
                             instance_coach = FootballCoach.objects.get(user=instance_id)
-                            coach_data = {key: data[key] for key in ['user']}
+                            # coach_data = {key: data[key] for key in ['user']}
+                            serializer_coach = FootballCoachSerializer(instance_coach, data=coach_data)
+                            if serializer_coach.is_valid():
+                                serializer_coach.save()
+                                return Response({"message": "Data updated successfully"}, status=200)
+                            return Response(serializer_coach.errors, status=400)
+                        except FootballCoach.DoesNotExist:
                             serializer_coach = FootballCoachSerializer(data=coach_data)
                             if serializer_coach.is_valid():
                                 serializer_coach.save()
-                                return Response({{"message": "Data saved successfully"}}, status=200)
-                            else:
-                                return Response(serializer_coach.errors, status=400)
-                        except FootballCoach.DoesNotExist:
-                            return Response(serializer.data, status=200)
+                                return Response({"message": "Data saved successfully"}, status=200)
+                            return Response(serializer_coach.errors, status=400)
                         
                     elif type == 'Agent':
+                        agent_data = {key: data[key] for key in ['user']}
                         try:
                             instance_agent = Agent.objects.get(user=instance_id)
-                            agent_data = {key: data[key] for key in ['user']}
+                            # agent_data = {key: data[key] for key in ['user']}
+                            serializer_agent = AgentSerializer(instance_agent, data=agent_data)
+                            if serializer_agent.is_valid():
+                                serializer_agent.save()
+                                return Response({"message": "Data updated successfully"}, status=200)
+                            return Response(serializer_agent.errors, status=400)
+                        except Agent.DoesNotExist:
                             serializer_agent = AgentSerializer(data=agent_data)
                             if serializer_agent.is_valid():
                                 serializer_agent.save()
-                                return Response({{"message": "Data saved successfully"}}, status=200)
-                            else:
-                                return Response(serializer_agent.errors, status=400)
-                        except Agent.DoesNotExist:
-                            return Response(serializer.data, status=200)     
+                                return Response({"message": "Data saved successfully"}, status=200)
+                            return Response(serializer_agent.errors, status=400) 
                 else:
                     if not user_instance.is_flag and user_instance.club_name is not None and user_instance.contact_no is not None and user_instance.dob is not None:
                         user_instance.is_flag = True
                         user_instance.save()
+                        club_data = {key: data[key] for key in ['user']}
                         try:
                             instance_club = FootballClub.objects.get(user=instance_id)
-                            club_data = {key: data[key] for key in ['user']}
+                            # club_data = {key: data[key] for key in ['user']}
                             serializer_club = FootballClubSerializer(instance_club, data=club_data)
                             if serializer_club.is_valid():
                                 serializer_club.save()
-                                return Response({{"message": "Data updated successfully"}}, status=201)
+                                return Response({"message": "Data updated successfully"}, status=201)
                             return Response(serializer_club.errors, status=400)
                         except FootballClub.DoesNotExist:
-                            club_data = {key: data[key] for key in ['user']}
+                            # club_data = {key: data[key] for key in ['user']}
                             serializer_club = FootballClubSerializer(data=club_data)
                             if serializer_club.is_valid():
                                 serializer_club.save()
-                                return Response({{"message": "Data saved successfully"}}, status=200)        
+                                return Response({"message": "Data saved successfully"}, status=200)        
                             return Response(serializer_club.errors, status=400)        
             return Response(serializer.errors, status=400)
 
