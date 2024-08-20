@@ -81,6 +81,7 @@ router.register(r'condiotioninglog', ConditioningLogViewSet, basename='condiotio
 urlpatterns = [
     # path('', views.getRoutes),
     path('register/', registerView.as_view(), name='register'),
+    path('register/institute/', CreateInstituteProfileView.as_view(), name='register_institute'),
     path('email-verify/', VerifyEmail.as_view(), name="email-verify"),
     path('login/', LoginAPIView.as_view(), name="login"),
     # path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),

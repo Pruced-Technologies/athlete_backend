@@ -195,6 +195,7 @@ class UserViewSet(viewsets.ModelViewSet):
             print('Sport profile created already')
             if not instance.is_flag:
                 instance.is_flag = True
+                # instance.account_type = 'user'
                 instance.save() 
         else:
             print('Sport profile not created yet')
@@ -1005,34 +1006,56 @@ class MultiModelCreateAPIView(APIView):
                             try:     
                                 my_object = CustomUser.objects.get(reg_id=register_id)
                                 endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                                
+                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                                email_body = 'Hi '+my_object.club_name + ' , you have endorsement request from player' +\
+                                    ' Use the link below to check the endorsement request \n' + absurl
+                                data = {'email_body': email_body, 'to_email': my_object.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
                                   
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[my_object.email],
-                                    fail_silently=False,
-                                )
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from player',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[my_object.email],
+                                #     fail_silently=False,
+                                # )
                                 endorsement_request_serializer.save()  
                             except CustomUser.DoesNotExist: 
-                                new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                                print(new_user)
-                                user_serializer = UserSerializer(data=new_user)
-                                if user_serializer.is_valid():
-                                    user_instance = user_serializer.save()
-                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                    endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                    
-                                    send_mail(
-                                        subject='Endorsement Request',
-                                        message='Endorsement request from player for registration',
-                                        from_email='athletescouting@gmail.com',
-                                        recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                        fail_silently=False,
-                                    )
-                                    endorsement_request_serializer.save()
-                                else:
-                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                                try:
+                                    my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                    player_career_history = Club.objects.get(id=player_career_history_instance.id)
+                                    player_career_history.delete()
+                                    return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                                except CustomUser.DoesNotExist:
+                                    new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                    print(new_user)
+                                    user_serializer = UserSerializer(data=new_user)
+                                    if user_serializer.is_valid():
+                                        user_instance = user_serializer.save()
+                                        endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                        endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                        
+                                        # send_mail(
+                                        #     subject='Endorsement Request',
+                                        #     message='Endorsement request from player for registration',
+                                        #     from_email='athletescouting@gmail.com',
+                                        #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                        #     fail_silently=False,
+                                        # )
+                                        
+                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
+                                                    ' Use the link below to register \n' + absurl
+                                        data = {'email_body': email_body, 'to_email': user_instance.email,
+                                                'email_subject': 'Endorsement Request from Bscoutd'}
+
+                                        Util.send_email(data)
+                                        endorsement_request_serializer.save()
+                                    else:
+                                        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -1100,25 +1123,40 @@ class MultiModelCreateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id': team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                                endorsement_request_serializer.save()
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                player_career_history = Club.objects.get(id=player_career_history_instance.id)
+                                player_career_history.delete()
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id': team_id, 'is_active': False, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from player for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request from Bscoutd'}
+                                    
+                                    Util.send_email(data)
+                                    
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -1166,25 +1204,40 @@ class MultiModelCreateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': team_id}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                            endorsement_request_serializer.save()
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                player_career_history = Club.objects.get(id=player_career_history_instance.id)
+                                player_career_history.delete()
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': team_id, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from player for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request from Bscoutd'}
+
+                                    Util.send_email(data)
+                                    
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -1249,35 +1302,57 @@ class MultiModelCreateUpdateAPIView(APIView):
                     try:          
                         my_object = CustomUser.objects.get(reg_id=register_id)
                         endorsement_request_serializer.validated_data['to_endorser'] = my_object 
+                        
+                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                        email_body = 'Hi '+my_object.club_name + ' , you have endorsement request from player' +\
+                        ' Use the link below to check the endorsement request \n' + absurl
+                        data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
+
+                        Util.send_email(data)
                                     
-                        send_mail(
-                            subject='Endorsement Request',
-                            message='Endorsement request from player',
-                            from_email='athletescouting@gmail.com',
-                            recipient_list=[my_object.email],
-                            fail_silently=False,
-                        )
+                        # send_mail(
+                        #     subject='Endorsement Request',
+                        #     message='Endorsement request from player',
+                        #     from_email='athletescouting@gmail.com',
+                        #     recipient_list=[my_object.email],
+                        #     fail_silently=False,
+                        # )
                         endorsement_request_serializer.save()  
                     except CustomUser.DoesNotExist: 
-                        new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                        print(new_user)
-                        user_serializer = UserSerializer(data=new_user)
-                        if user_serializer.is_valid():
-                            user_instance = user_serializer.save()
-                            endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                            # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
-                            endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                    
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement request from player for registration',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
-                            endorsement_request_serializer.save()
-                        else:
-                            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+                        try:
+                            my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                            player_career_history = Club.objects.get(id=player_career_history_instance.id)
+                            player_career_history.delete()
+                            return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                        except CustomUser.DoesNotExist:
+                            new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': career_history['club_name'], 'account_type': 'institute'}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
+                                endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                        
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from player for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                            ' Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                                        
+                                endorsement_request_serializer.save()
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
                 else:
                     return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -1338,31 +1413,53 @@ class PlayerLeagueModelUpdateAPIView(APIView):
                         my_object = CustomUser.objects.get(reg_id=register_id)
                         endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                        send_mail(
-                            subject='Endorsement Request',
-                            message='Endorsement request from player',
-                            from_email='athletescouting@gmail.com',
-                            recipient_list=[my_object.email],
-                            fail_silently=False,
-                        )
+                        # send_mail(
+                        #     subject='Endorsement Request',
+                        #     message='Endorsement request from player',
+                        #     from_email='athletescouting@gmail.com',
+                        #     recipient_list=[my_object.email],
+                        #     fail_silently=False,
+                        # )
+                        
+                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from player' +\
+                        ' Use the link below to check the endorsement request \n' + absurl
+                        data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
+
+                        Util.send_email(data)
+                        
                         endorsement_request_serializer.save() 
                     except CustomUser.DoesNotExist: 
-                        new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                        print(new_user)
-                        user_serializer = UserSerializer(data=new_user)
-                        if user_serializer.is_valid():
-                            user_instance = user_serializer.save()
-                            endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                            # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
-                                                    
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement request from player for registration',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
-                            endorsement_request_serializer.save()  
+                        try:
+                            my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                            return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                        except CustomUser.DoesNotExist:
+                            new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': career_history['club_name'], 'account_type': 'institute'}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
+                                                        
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from player for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                            ' Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                                
+                                endorsement_request_serializer.save()  
+                            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
                 else:
                     return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -1423,31 +1520,53 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                                 my_object = CustomUser.objects.get(reg_id=register_id)
                                 endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[my_object.email],
-                                    fail_silently=False,
-                                )
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from player',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[my_object.email],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from player' +\
+                                ' Use the link below to check the endorsement request \n' + absurl
+                                data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                        
                                 endorsement_request_serializer.save() 
                             except CustomUser.DoesNotExist: 
-                                new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                                print(new_user)
-                                user_serializer = UserSerializer(data=new_user)
-                                if user_serializer.is_valid():
-                                    user_instance = user_serializer.save()
-                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                    # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
-                                                            
-                                    send_mail(
-                                        subject='Endorsement Request',
-                                        message='Endorsement request from player for registration',
-                                        from_email='athletescouting@gmail.com',
-                                        recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                        fail_silently=False,
-                                    )
-                                    endorsement_request_serializer.save()  
+                                try:
+                                    my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                    return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                                except CustomUser.DoesNotExist:
+                                    new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                    print(new_user)
+                                    user_serializer = UserSerializer(data=new_user)
+                                    if user_serializer.is_valid():
+                                        user_instance = user_serializer.save()
+                                        endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                        # endorsement_request_serializer.validated_data['to_endorser_email'] = user_instance.email
+                                                                
+                                        # send_mail(
+                                        #     subject='Endorsement Request',
+                                        #     message='Endorsement request from player for registration',
+                                        #     from_email='athletescouting@gmail.com',
+                                        #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                        #     fail_silently=False,
+                                        # )
+                                        
+                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                    ' Use the link below to register \n' + absurl
+                                        data = {'email_body': email_body, 'to_email': user_instance.email,
+                                                'email_subject': 'Endorsement Request'}
+
+                                        Util.send_email(data)
+                                
+                                        endorsement_request_serializer.save()  
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -1518,25 +1637,37 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                            endorsement_request_serializer.save()
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from player for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                        
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -1593,25 +1724,37 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from player for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                            endorsement_request_serializer.save()
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': player_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from player for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                        
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -1950,33 +2093,57 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                                 my_object = CustomUser.objects.get(reg_id=register_id)
                                 endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[my_object.email],
-                                    fail_silently=False,
-                                )
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from coach',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[my_object.email],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
+                                    ' Use the link below to check the endorsement request \n' + absurl
+                                data = {'email_body': email_body, 'to_email': my_object.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                                
                                 endorsement_request_serializer.save() 
                             except CustomUser.DoesNotExist:
-                                new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                                print(new_user)
-                                user_serializer = UserSerializer(data=new_user)
-                                if user_serializer.is_valid():
-                                    user_instance = user_serializer.save()
-                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                    endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
-                                                    
-                                    send_mail(
-                                        subject='Endorsement Request',
-                                        message='Endorsement request from coach for registration',
-                                        from_email='athletescouting@gmail.com',
-                                        recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                        fail_silently=False,
-                                    )
-                                    endorsement_request_serializer.save()
-                                else:
-                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
+                                try:
+                                    my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                    coach_career_history = FootballCoachCareerHistory.objects.get(id=coach_career_history_instance.id)
+                                    coach_career_history.delete()
+                                    return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                                except CustomUser.DoesNotExist:
+                                    new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                    print(new_user)
+                                    user_serializer = UserSerializer(data=new_user)
+                                    if user_serializer.is_valid():
+                                        user_instance = user_serializer.save()
+                                        endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                        endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                        
+                                        # send_mail(
+                                        #     subject='Endorsement Request',
+                                        #     message='Endorsement request from coach for registration',
+                                        #     from_email='athletescouting@gmail.com',
+                                        #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                        #     fail_silently=False,
+                                        # )
+                                        
+                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                    ' Use the link below to register \n' + absurl
+                                        data = {'email_body': email_body, 'to_email': user_instance.email,
+                                                'email_subject': 'Endorsement Request'}
+
+                                        Util.send_email(data)
+                                
+                                        endorsement_request_serializer.save()
+                                    else:
+                                        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
         
@@ -2043,24 +2210,39 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballCoachEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                            endorsement_request_serializer.save()
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                coach_career_history = FootballCoachCareerHistory.objects.get(id=coach_career_history_instance.id)
+                                coach_career_history.delete()
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from coach for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -2111,24 +2293,39 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballCoachEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                            endorsement_request_serializer.save()
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                coach_career_history = FootballCoachCareerHistory.objects.get(id=coach_career_history_instance.id)
+                                coach_career_history.delete()
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from coach for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                    
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         
@@ -2194,33 +2391,57 @@ class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
                         my_object = CustomUser.objects.get(reg_id=register_id)
                         endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                        send_mail(
-                            subject='Endorsement Request',
-                            message='Endorsement request from coach',
-                            from_email='athletescouting@gmail.com',
-                            recipient_list=[my_object.email],
-                            fail_silently=False,
-                        )
+                        # send_mail(
+                        #     subject='Endorsement Request',
+                        #     message='Endorsement request from coach',
+                        #     from_email='athletescouting@gmail.com',
+                        #     recipient_list=[my_object.email],
+                        #     fail_silently=False,
+                        # )
+                        
+                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
+                                    ' Use the link below to check the endorsement request \n' + absurl
+                        data = {'email_body': email_body, 'to_email': my_object.email,
+                                'email_subject': 'Endorsement Request'}
+
+                        Util.send_email(data)
+                                
                         endorsement_request_serializer.save()   
                     except CustomUser.DoesNotExist:
-                        new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                        print(new_user)
-                        user_serializer = UserSerializer(data=new_user)
-                        if user_serializer.is_valid():
-                            user_instance = user_serializer.save()
-                            endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                            endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
-                                                    
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement request from coach for registration',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
-                            endorsement_request_serializer.save()
-                        else:
-                            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)      
+                        try:
+                            my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                            coach_career_history = FootballCoachCareerHistory.objects.get(id=coach_career_history_instance.id)
+                            coach_career_history.delete()
+                            return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                        except CustomUser.DoesNotExist:
+                            new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': career_history['club_name'], 'account_type': 'institute'}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                endorsement_request_serializer.validated_data['coach_career_history'] = coach_career_history_instance
+                                                        
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from coach for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                            ' Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                                
+                                endorsement_request_serializer.save()
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)      
                 else:
                     return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -2281,32 +2502,54 @@ class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
                         my_object = CustomUser.objects.get(reg_id=register_id)
                         endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                        send_mail(
-                            subject='Endorsement Request',
-                            message='Endorsement request from coach',
-                            from_email='athletescouting@gmail.com',
-                            recipient_list=[my_object.email],
-                            fail_silently=False,
-                        )
+                        # send_mail(
+                        #     subject='Endorsement Request',
+                        #     message='Endorsement request from coach',
+                        #     from_email='athletescouting@gmail.com',
+                        #     recipient_list=[my_object.email],
+                        #     fail_silently=False,
+                        # )
+                        
+                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
+                                    ' Use the link below to check the endorsement request \n' + absurl
+                        data = {'email_body': email_body, 'to_email': my_object.email,
+                                'email_subject': 'Endorsement Request'}
+
+                        Util.send_email(data)
+                        
                         endorsement_request_serializer.save()  
                     except CustomUser.DoesNotExist:
-                        new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                        print(new_user)
-                        user_serializer = UserSerializer(data=new_user)
-                        if user_serializer.is_valid():
-                            user_instance = user_serializer.save()
-                            endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                                    
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement request from coach for registration',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
-                            endorsement_request_serializer.save()
-                        else:
-                            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        try:
+                            my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                            return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                        except CustomUser.DoesNotExist:
+                            new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': career_history['club_name'], 'account_type': 'institute'}
+                            print(new_user)
+                            user_serializer = UserSerializer(data=new_user)
+                            if user_serializer.is_valid():
+                                user_instance = user_serializer.save()
+                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                                        
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from coach for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                            ' Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                                
+                                endorsement_request_serializer.save()
+                            else:
+                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -2363,32 +2606,54 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                                 my_object = CustomUser.objects.get(reg_id=endorsement_request_serializer.validated_data['to_endorser'])
                                 endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                     
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[my_object.email],
-                                    fail_silently=False,
-                                )
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from coach',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[my_object.email],
+                                #     fail_silently=False,
+                                # )
+                                
+                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
+                                            ' Use the link below to check the endorsement request \n' + absurl
+                                data = {'email_body': email_body, 'to_email': my_object.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
+                        
                                 endorsement_request_serializer.save()  
                             except CustomUser.DoesNotExist:
-                                new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id}
-                                print(new_user)
-                                user_serializer = UserSerializer(data=new_user)
-                                if user_serializer.is_valid():
-                                    user_instance = user_serializer.save()
-                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                                            
-                                    send_mail(
-                                        subject='Endorsement Request',
-                                        message='Endorsement request from coach for registration',
-                                        from_email='athletescouting@gmail.com',
-                                        recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                        fail_silently=False,
-                                    )
-                                    endorsement_request_serializer.save()
-                                else:
-                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+                                try:
+                                    my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                    return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                                except CustomUser.DoesNotExist:
+                                    new_user = {'username': register_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'is_active': False, 'reg_id': register_id, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                    print(new_user)
+                                    user_serializer = UserSerializer(data=new_user)
+                                    if user_serializer.is_valid():
+                                        user_instance = user_serializer.save()
+                                        endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                                                
+                                        # send_mail(
+                                        #     subject='Endorsement Request',
+                                        #     message='Endorsement request from coach for registration',
+                                        #     from_email='athletescouting@gmail.com',
+                                        #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                        #     fail_silently=False,
+                                        # )
+                                        
+                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                    ' Use the link below to register \n' + absurl
+                                        data = {'email_body': email_body, 'to_email': user_instance.email,
+                                                'email_subject': 'Endorsement Request'}
+
+                                        Util.send_email(data)
+                                
+                                        endorsement_request_serializer.save()
+                                    else:
+                                        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
                                 
@@ -2459,24 +2724,37 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                                endorsement_request_serializer.save()
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from coach for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -2532,24 +2810,37 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                     if(endorsement_request != ''):
                         endorsement_request_serializer = FootballPlayerEndorsementRequestSerializer(data=endorsement_request)
                         if endorsement_request_serializer.is_valid():
-                            new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False}
-                            print(new_user)
-                            user_serializer = UserSerializer(data=new_user)
-                            if user_serializer.is_valid():
-                                user_instance = user_serializer.save()
-                                endorsement_request_serializer.validated_data['to_endorser'] = user_instance
-                                # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
-                                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from coach for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
-                                endorsement_request_serializer.save()
-                            else:
-                                return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                            try:
+                                my_object = CustomUser.objects.get(email=endorsement_request_serializer.validated_data['to_endorser_email'])
+                                return Response({'Email Id already registered with other User'}, status=status.HTTP_400_BAD_REQUEST)
+                            except CustomUser.DoesNotExist:
+                                new_user = {'username': team_id, 'password': 'welCome@123', 'password2': 'welCome@123', 'email': endorsement_request_serializer.validated_data['to_endorser_email'], 'reg_id':  team_id, 'is_active': False, 'club_name': coach_data['club_name'], 'account_type': 'institute'}
+                                print(new_user)
+                                user_serializer = UserSerializer(data=new_user)
+                                if user_serializer.is_valid():
+                                    user_instance = user_serializer.save()
+                                    endorsement_request_serializer.validated_data['to_endorser'] = user_instance
+                                    # endorsement_request_serializer.validated_data['player_career_history'] = player_career_history_instance
+                                                    
+                                    # send_mail(
+                                    #     subject='Endorsement Request',
+                                    #     message='Endorsement request from coach for registration',
+                                    #     from_email='athletescouting@gmail.com',
+                                    #     recipient_list=[endorsement_request_serializer.validated_data['to_endorser_email']],
+                                    #     fail_silently=False,
+                                    # )
+                                    
+                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
+                                                ' Use the link below to register \n' + absurl
+                                    data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                    Util.send_email(data)
+                                
+                                    endorsement_request_serializer.save()
+                                else:
+                                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             return Response(endorsement_request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                     # Return any relevant data or success message
@@ -3276,9 +3567,10 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
                 serializer.save()
                 user_instance = CustomUser.objects.get(id=instance_id)
                 if type != 'Instituition':
+                    user_instance.account_type = 'user'
                     if not user_instance.is_flag and user_instance.first_name is not None and user_instance.last_name is not None and user_instance.contact_no is not None and user_instance.dob is not None:
                         user_instance.is_flag = True
-                        user_instance.save() 
+                    user_instance.save() 
                     if type == 'Player':
                         player_data = {key: data[key] for key in ['user']}
                         try:
@@ -3331,25 +3623,26 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
                                 return Response({"message": "Data saved successfully"}, status=200)
                             return Response(serializer_agent.errors, status=400) 
                 else:
+                    user_instance.account_type = 'institute'
                     if not user_instance.is_flag and user_instance.club_name is not None and user_instance.contact_no is not None and user_instance.dob is not None:
                         user_instance.is_flag = True
-                        user_instance.save()
-                        club_data = {key: data[key] for key in ['user']}
-                        try:
-                            instance_club = FootballClub.objects.get(user=instance_id)
-                            # club_data = {key: data[key] for key in ['user']}
-                            serializer_club = FootballClubSerializer(instance_club, data=club_data)
-                            if serializer_club.is_valid():
-                                serializer_club.save()
-                                return Response({"message": "Data updated successfully"}, status=201)
-                            return Response(serializer_club.errors, status=400)
-                        except FootballClub.DoesNotExist:
-                            # club_data = {key: data[key] for key in ['user']}
-                            serializer_club = FootballClubSerializer(data=club_data)
-                            if serializer_club.is_valid():
-                                serializer_club.save()
-                                return Response({"message": "Data saved successfully"}, status=200)        
-                            return Response(serializer_club.errors, status=400)        
+                    user_instance.save()
+                    club_data = {key: data[key] for key in ['user']}
+                    try:
+                        instance_club = FootballClub.objects.get(user=instance_id)
+                        # club_data = {key: data[key] for key in ['user']}
+                        serializer_club = FootballClubSerializer(instance_club, data=club_data)
+                        if serializer_club.is_valid():
+                            serializer_club.save()
+                            return Response({"message": "Data updated successfully"}, status=201)
+                        return Response(serializer_club.errors, status=400)
+                    except FootballClub.DoesNotExist:
+                        # club_data = {key: data[key] for key in ['user']}
+                        serializer_club = FootballClubSerializer(data=club_data)
+                        if serializer_club.is_valid():
+                            serializer_club.save()
+                            return Response({"message": "Data saved successfully"}, status=200)        
+                        return Response(serializer_club.errors, status=400)         
             return Response(serializer.errors, status=400)
 
         
@@ -3397,3 +3690,46 @@ class DeleteAllUsersView(APIView):
         CustomUser.objects.all().delete()
         Address.objects.all().delete()
         return Response({"message": "All users deleted"}, status=status.HTTP_204_NO_CONTENT)
+    
+# class CreateInstituteProfileView(APIView):
+#     def post(self, request):
+#         serializer = CreateInstituteProfileSerializer(data=request.data)
+#         if serializer.is_valid():
+#             user = request.user
+#             print(user)
+#             if user.check_password('welCome@123'):
+#                 user.set_password(serializer.data.get('new_password'))
+#                 user.save()
+#                 return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+#             return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class CreateInstituteProfileView(APIView):
+    def post(self, request):
+        data = request.data
+        emailId = data.get('email')
+        pwd = data.get('password')
+        try:
+            user = CustomUser.objects.get(email=emailId)
+            if user.check_password('welCome@123'):
+                try:
+                    validators.validate_password(pwd)
+                    user.set_password(pwd)
+                    user.is_active = True
+                    user.save()
+                    token = RefreshToken.for_user(user).access_token
+                    current_site = get_current_site(request).domain
+                    relativeLink = reverse('email-verify')
+                    absurl = 'http://'+current_site+relativeLink+"?token="+str(token)
+                    email_body = 'Hi '+user.club_name + \
+                        ' Use the link below to verify your email \n' + absurl
+                    data = {'email_body': email_body, 'to_email': user.email,
+                            'email_subject': 'Verify your email'}
+
+                    Util.send_email(data)
+                    return Response({"message": "Data saved successfully. Please check your mail for verification your user's account."}, status=status.HTTP_200_OK)
+                except ValidationError as exc:
+                    raise serializers.ValidationError({'password': exc.messages})
+            return Response({'error': 'Incorrect old password.'}, status=status.HTTP_401_UNAUTHORIZED)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)

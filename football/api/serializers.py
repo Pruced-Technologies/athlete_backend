@@ -733,6 +733,10 @@ class GetNewsSerializer(serializers.ModelSerializer):
         ordering = ['-id']
         model = News
         fields = '__all__'
+        
+class CreateInstituteProfileSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    new_password = serializers.CharField(required=True)
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)

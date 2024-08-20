@@ -79,6 +79,7 @@ class CustomUser(AbstractUser):
     citizenship = models.CharField(max_length=100,blank=True,null=True)
     reg_id = models.CharField(max_length=50,blank=True,null=True)
     auth_provider=models.CharField(max_length=50, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
+    account_type=models.CharField(max_length=50, blank=True, null=True)
     is_verified = models.BooleanField(
         ("verified"),
         default=False,
@@ -112,6 +113,7 @@ class CustomUser(AbstractUser):
         refresh['username'] = self.username
         refresh['sport_type'] = self.sport_type
         refresh['is_flag'] = self.is_flag
+        refresh['account_type'] = self.account_type
         
         return {
             "refresh":str(refresh),
