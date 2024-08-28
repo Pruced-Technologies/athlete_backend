@@ -326,7 +326,9 @@ class CoachLicense(models.Model):
     id = models.AutoField(primary_key=True)
     license_id = models.IntegerField(null=True, blank=True)
     license_name = models.CharField(max_length=255,null=True, blank=True)
-    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    # certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    document_type = models.CharField(max_length=100, default='application/pdf')
+    document_file = models.FileField(upload_to='coach_cerificate/', null=True, blank=True)
     coach = models.ForeignKey(FootballCoach, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
     
     def __str__(self):
@@ -394,7 +396,8 @@ class FootballClubHistory(models.Model):
     points = models.IntegerField(null=True, blank=True)
     position = models.CharField(max_length=100,null=True, blank=True)
     tournament = models.CharField(max_length=255,null=True, blank=True)
-    achievement = models.TextField(null=True,blank=True)
+    # achievement = models.TextField(null=True,blank=True)
+    achievement = models.JSONField(null=True,blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
     # club_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='club_history',null=True, blank=True)
 
@@ -418,9 +421,10 @@ class FootballClubOfficeBearer(models.Model):
 class FootballClubVerificationDocument(models.Model):
     id = models.AutoField(primary_key=True)
     license_id = models.IntegerField(null=True, blank=True)
-    document_type = models.CharField(max_length=100, default='jpg')
+    document_type = models.CharField(max_length=100, default='pdf')
     document_name = models.CharField(max_length=255, null=True, blank=True)
-    document_file = models.ImageField(upload_to="club_document",null=True,blank=True)
+    # document_file = models.ImageField(upload_to="club_document",null=True,blank=True)
+    document_file = models.FileField(upload_to='club_document/', null=True, blank=True)
     club_id = models.ForeignKey(FootballClub, on_delete=models.CASCADE, related_name='verification_document', null=True, blank=True)
 
 # class Acheivements(models.Model):
@@ -537,7 +541,9 @@ class AgentLicense(models.Model):
     id = models.AutoField(primary_key=True)
     license_id = models.IntegerField(null=True, blank=True)
     license_name = models.CharField(max_length=255,null=True, blank=True)
-    certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    # certificate = models.ImageField(upload_to="cerificate",null=True,blank=True)
+    document_type = models.CharField(max_length=100, default='application/pdf')
+    document_file = models.FileField(upload_to='agent_cerificate/', null=True, blank=True)
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='my_license', null=True, blank=True)
     
     def __str__(self):

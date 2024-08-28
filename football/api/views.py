@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
 from rest_framework import viewsets, filters, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, action
@@ -116,9 +117,8 @@ class registerView(APIView):
         token = RefreshToken.for_user(user).access_token
         current_site = get_current_site(request).domain
         relativeLink = reverse('email-verify')
-        absurl = 'http://'+current_site+relativeLink+"?token="+str(token)
-        email_body = 'Hi '+user.username + \
-            ' Use the link below to verify your email \n' + absurl
+        absurl = 'http://'+current_site+relativeLink+"?token="+str(token)+"&email="+user.email
+        email_body = 'Hi '+user.username + ', \n Use the link below to verify your email \n' + absurl
         data = {'email_body': email_body, 'to_email': user.email,
                 'email_subject': 'Verify your email'}
 
@@ -126,13 +126,40 @@ class registerView(APIView):
         return Response({"message": "Data saved successfully. Please check your mail for verification your user's account.", "data":user_data}, status=200)
 
 
+def getExpiredToken(request):
+        emailId = request.GET.get('emailId')
+        print(f'my email Id:',emailId)   
+        try:
+            # print(f'my token:',token)                                                                        
+            # user_data = jwt.decode(token, settings.SECRET_KEY,algorithms=["HS256"])
+            # print(f'my user data:',user_data)                                                                        
+            user = CustomUser.objects.get(email=emailId)
+            # print(user)
+            token = RefreshToken.for_user(user).access_token
+            current_site = get_current_site(request).domain
+            relativeLink = reverse('email-verify')
+            absurl = 'http://'+current_site+relativeLink+"?token="+str(token)+"&email="+user.email
+            email_body = 'Hi '+user.username + ', \n Use the link below to verify your email \n' + absurl
+            data = {'email_body': email_body, 'to_email': user.email,
+                    'email_subject': 'Verify your email'}
+            print(data)
+            Util.send_email(data)
+            # return Response({"message": "Data saved successfully. Please check your mail for verification your user's account.", "data":user_data}, status=200)
+            return HttpResponse("Token send successfully. Please check your mail for verification your user's account.")
+            # return render(request, 'token_response.html', {"message": "Data saved successfully. Please check your mail for verification your user's account."})
+        except:
+            return HttpResponse("User does not exist.")
+        
+
 class VerifyEmail(APIView):
     serializer_class = EmailVerificationSerializer
 
     def get(self, request):
         token = request.GET.get('token')
+        emailId = request.GET.get('email')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY,algorithms=["HS256"])
+            # payload.blacklist()
             # print(payload)
             user = CustomUser.objects.get(id=payload['user_id'])
             if not user.is_verified:
@@ -142,7 +169,7 @@ class VerifyEmail(APIView):
             return render(request, 'football/my_template.html')
         except jwt.ExpiredSignatureError as identifier:
             # return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
-            return render(request, 'football/my_template_session_expired.html')
+            return render(request, 'football/my_template_session_expired.html', {'emailId':emailId})
         except jwt.exceptions.DecodeError as identifier:
             # return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)   
             return render(request, 'football/my_template_invalid_token.html')
@@ -371,7 +398,7 @@ class FootballClubLicenseCreateModelAPIView(APIView):
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                club_data = {key: data[key] for key in ['license_id', 'document_name', 'document_file', 'club_id']}
+                club_data = {key: data[key] for key in ['license_id', 'document_type', 'document_name', 'document_file', 'club_id']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -417,7 +444,7 @@ class FootballClubLicenseUpdateModelAPIView(APIView):
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                club_data = {key: data[key] for key in ['id', 'license_id', 'document_name', 'document_file', 'club_id']}
+                club_data = {key: data[key] for key in ['id', 'license_id', 'document_type', 'document_name', 'document_file', 'club_id']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -458,8 +485,8 @@ class FootballClubLicenseUpdateModelAPIView(APIView):
         # Get the instance to update
         instance_id = request.data.get('id')  # Remove 'id' from data
         try:
-            instance = FootballClubVerificationDocumentSerializer.objects.get(pk=instance_id)
-        except FootballClubVerificationDocumentSerializer.DoesNotExist:
+            instance = FootballClubVerificationDocument.objects.get(pk=instance_id)
+        except FootballClubVerificationDocument.DoesNotExist:
             return Response({"error": "Instance does not exist"}, status=404)
 
         # Update the instance
@@ -962,6 +989,14 @@ class FootballPlayerEndorsementRequestViewSet(viewsets.ModelViewSet):
     queryset = FootballPlayerEndorsementRequest.objects.all()
     serializer_class = FootballPlayerEndorsementRequestSerializer
     
+class GetFootballPlayerEndorsementRequestViewSet(viewsets.ModelViewSet):
+    queryset = FootballPlayerEndorsementRequest.objects.all()
+    serializer_class = GetPlayerEndorsementRequestSerializer
+
+class GetFootballCoachEndorsementRequestViewSet(viewsets.ModelViewSet):
+    queryset = FootballCoachEndorsementRequest.objects.all()
+    serializer_class = GetCoachEndorsementRequestSerializer
+    
 class MultiModelCreateAPIView(APIView):
     def post(self, request, *args, **kwargs):
         # Assuming the request data contains a 'type' field indicating the model
@@ -1007,9 +1042,8 @@ class MultiModelCreateAPIView(APIView):
                                 my_object = CustomUser.objects.get(reg_id=register_id)
                                 endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                                 
-                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                                email_body = 'Hi '+my_object.club_name + ' , you have endorsement request from player' +\
-                                    ' Use the link below to check the endorsement request \n' + absurl
+                                absurl = settings.BASE_URL+'endorsements/pending'
+                                email_body = 'Hi '+my_object.club_name + ', you have endorsement request from player.' + '\n Use the link below to check the endorsement request \n' + absurl
                                 data = {'email_body': email_body, 'to_email': my_object.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -1046,9 +1080,8 @@ class MultiModelCreateAPIView(APIView):
                                         #     fail_silently=False,
                                         # )
                                         
-                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                        email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
-                                                    ' Use the link below to register \n' + absurl
+                                        absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
                                         data = {'email_body': email_body, 'to_email': user_instance.email,
                                                 'email_subject': 'Endorsement Request from Bscoutd'}
 
@@ -1146,9 +1179,8 @@ class MultiModelCreateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.username + ', you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request from Bscoutd'}
                                     
@@ -1227,9 +1259,8 @@ class MultiModelCreateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.username + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.username + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request from Bscoutd'}
 
@@ -1303,9 +1334,8 @@ class MultiModelCreateUpdateAPIView(APIView):
                         my_object = CustomUser.objects.get(reg_id=register_id)
                         endorsement_request_serializer.validated_data['to_endorser'] = my_object 
                         
-                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                        email_body = 'Hi '+my_object.club_name + ' , you have endorsement request from player' +\
-                        ' Use the link below to check the endorsement request \n' + absurl
+                        absurl = settings.BASE_URL+'endorsements/pending'
+                        email_body = 'Hi '+my_object.club_name + ', you have endorsement request from player' + '\n Use the link below to check the endorsement request \n' + absurl
                         data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
 
                         Util.send_email(data)
@@ -1342,9 +1372,8 @@ class MultiModelCreateUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                            ' Use the link below to register \n' + absurl
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                 data = {'email_body': email_body, 'to_email': user_instance.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -1421,9 +1450,8 @@ class PlayerLeagueModelUpdateAPIView(APIView):
                         #     fail_silently=False,
                         # )
                         
-                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from player' +\
-                        ' Use the link below to check the endorsement request \n' + absurl
+                        absurl = settings.BASE_URL+'endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from player.' + '\n Use the link below to check the endorsement request \n' + absurl
                         data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
 
                         Util.send_email(data)
@@ -1450,9 +1478,8 @@ class PlayerLeagueModelUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                            ' Use the link below to register \n' + absurl
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                 data = {'email_body': email_body, 'to_email': user_instance.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -1528,9 +1555,8 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from player' +\
-                                ' Use the link below to check the endorsement request \n' + absurl
+                                absurl = settings.BASE_URL+'endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from player.' + '\n Use the link below to check the endorsement request \n' + absurl
                                 data = {'email_body': email_body, 'to_email': my_object.email, 'email_subject': 'Endorsement Request'}
 
                                 Util.send_email(data)
@@ -1557,9 +1583,8 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                                         #     fail_silently=False,
                                         # )
                                         
-                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                    ' Use the link below to register \n' + absurl
+                                        absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                         data = {'email_body': email_body, 'to_email': user_instance.email,
                                                 'email_subject': 'Endorsement Request'}
 
@@ -1657,9 +1682,8 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -1744,9 +1768,8 @@ class PlayerTeamLeagueModelUpdateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -1860,12 +1883,12 @@ class FootballCoachLicenseCreateModelAPIView(APIView):
             return Response(serializer.errors, status=400)
         else:
             # If 'id' is not present, it's a create operation
-            if 'certificate' in request.data:
+            if 'document_file' in request.data:
                 data = request.data
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                coach_data = {key: data[key] for key in ['license_id', 'license_name', 'certificate', 'coach']}
+                coach_data = {key: data[key] for key in ['license_id', 'license_name', 'document_type', 'document_file', 'coach']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -1949,12 +1972,12 @@ class FootballCoachLicenseUpdateModelAPIView(APIView):
             return self.update(request, *args, **kwargs)
         else:
             # If 'id' is not present, it's a create operation
-            if 'certificate' in request.data:
+            if 'document_file' in request.data:
                 data = request.data
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                coach_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'certificate', 'coach']}
+                coach_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'document_type', 'document_file', 'coach']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -2101,9 +2124,8 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
-                                    ' Use the link below to check the endorsement request \n' + absurl
+                                absurl = settings.BASE_URL+'endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from coach.' + '\n Use the link below to check the endorsement request \n' + absurl
                                 data = {'email_body': email_body, 'to_email': my_object.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -2133,9 +2155,8 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                                         #     fail_silently=False,
                                         # )
                                         
-                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                    ' Use the link below to register \n' + absurl
+                                        absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                         data = {'email_body': email_body, 'to_email': user_instance.email,
                                                 'email_subject': 'Endorsement Request'}
 
@@ -2232,9 +2253,8 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -2315,9 +2335,8 @@ class CoachCareerHistoryModelCreateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -2399,9 +2418,8 @@ class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
                         #     fail_silently=False,
                         # )
                         
-                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
-                                    ' Use the link below to check the endorsement request \n' + absurl
+                        absurl = settings.BASE_URL+'endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from coach.' +'\n Use the link below to check the endorsement request \n' + absurl
                         data = {'email_body': email_body, 'to_email': my_object.email,
                                 'email_subject': 'Endorsement Request'}
 
@@ -2431,9 +2449,8 @@ class CoachCareerHistoryLeagueModelCreateUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                            ' Use the link below to register \n' + absurl
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                 data = {'email_body': email_body, 'to_email': user_instance.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -2510,9 +2527,8 @@ class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
                         #     fail_silently=False,
                         # )
                         
-                        absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                        email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
-                                    ' Use the link below to check the endorsement request \n' + absurl
+                        absurl = settings.BASE_URL+'endorsements/pending'
+                        email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from coach.' + '\n Use the link below to check the endorsement request \n' + absurl
                         data = {'email_body': email_body, 'to_email': my_object.email,
                                 'email_subject': 'Endorsement Request'}
 
@@ -2539,9 +2555,8 @@ class CoachCareerHistoryAndLeagueModelUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                            ' Use the link below to register \n' + absurl
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                 data = {'email_body': email_body, 'to_email': user_instance.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -2614,9 +2629,8 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                                 #     fail_silently=False,
                                 # )
                                 
-                                absurl = 'http://127.0.0.1:3000/endorsements/pending'
-                                email_body = 'Hi '+ my_object.club_name + ' , you have endorsement request from coach' +\
-                                            ' Use the link below to check the endorsement request \n' + absurl
+                                absurl = settings.BASE_URL+'endorsements/pending'
+                                email_body = 'Hi '+ my_object.club_name + ', you have endorsement request from coach.' + '\n Use the link below to check the endorsement request \n' + absurl
                                 data = {'email_body': email_body, 'to_email': my_object.email,
                                         'email_subject': 'Endorsement Request'}
 
@@ -2643,9 +2657,8 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                                         #     fail_silently=False,
                                         # )
                                         
-                                        absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                        email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                    ' Use the link below to register \n' + absurl
+                                        absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                        email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' + '\n Use the link below to register \n' + absurl
                                         data = {'email_body': email_body, 'to_email': user_instance.email,
                                                 'email_subject': 'Endorsement Request'}
 
@@ -2744,9 +2757,8 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -2830,9 +2842,8 @@ class CoachCareerHistoryTeamAndLeagueModelUpdateAPIView(APIView):
                                     #     fail_silently=False,
                                     # )
                                     
-                                    absurl = 'http://127.0.0.1:3000/register?email=' + user_instance.email
-                                    email_body = 'Hi '+ user_instance.club_name + ' , you have a registration request from Bscoutd' +\
-                                                ' Use the link below to register \n' + absurl
+                                    absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                    email_body = 'Hi '+ user_instance.club_name + ', you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
                                     data = {'email_body': email_body, 'to_email': user_instance.email,
                                             'email_subject': 'Endorsement Request'}
 
@@ -2878,12 +2889,12 @@ class FootballAgentLicenseCreateModelAPIView(APIView):
             return Response(serializer.errors, status=400)
         else:
             # If 'id' is not present, it's a create operation
-            if 'certificate' in request.data:
+            if 'document_file' in request.data:
                 data = request.data
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                agent_data = {key: data[key] for key in ['license_id', 'license_name', 'certificate', 'agent']}
+                agent_data = {key: data[key] for key in ['license_id', 'license_name', 'document_type', 'document_file', 'agent']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -2967,12 +2978,12 @@ class FootballAgentLicenseUpdateModelAPIView(APIView):
             return self.update(request, *args, **kwargs)
         else:
             # If 'id' is not present, it's a create operation
-            if 'certificate' in request.data:
+            if 'document_file' in request.data:
                 data = request.data
         
                 # Separate the data based on the models
                 license_data = {key: data[key] for key in ['license_name']}
-                agent_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'certificate', 'agent']}
+                agent_data = {key: data[key] for key in ['id', 'license_id', 'license_name', 'document_type', 'document_file', 'agent']}
                 # And so on...
 
                 # Serialize the data for each model
@@ -3188,51 +3199,51 @@ class AgentCreatePlayersAndCoachesEndorsementAPIView(APIView):
                         # print(item_data['to_endorser'])
                         if item_data['to_endorser'] is None:
                             # random_str = generate_random_string(10)
-                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
-                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'is_active': False}
                             print(new_user)
                             user_serializer = UserSerializer(data=new_user)
                             if user_serializer.is_valid():
                                 user_instance = user_serializer.save()
-                                # print(user_serializer.data)
-                                # print(user_instance)
-                                
-                                # Extract 'id' from model1_instance
-                                # user_instance_id = user_instance.id
-                                # print(user_instance_id)
                 
-                                # Assign id to the appropriate field in Model2
                                 item_data['to_endorser'] = user_instance
                                 item_data['agent_players_coaches_under_me'] = player_coaches_under_me_instance
-                                # print(item_data['to_endorser'])
                                 
-                                # print(serializer.validated_data)
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from agent for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[item_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
                                 
-                                # user_serializer.save()
-                                # # Access the saved object instance
-                                # saved_object = user_serializer.instance
-                                # # Now you can access any attribute of the saved object
-                                # item_data['to_endorser'] = saved_object.id
-                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from agent for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[item_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.username + ', you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
                             else:
                                 return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             item_data['agent_players_coaches_under_me'] = player_coaches_under_me_instance
                             
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement Request from Agent',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[item_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
+                            my_object = CustomUser.objects.get(email=item_data['to_endorser_email'])
+                            
+                            # send_mail(
+                            #     subject='Endorsement Request',
+                            #     message='Endorsement Request from Agent',
+                            #     from_email='athletescouting@gmail.com',
+                            #     recipient_list=[item_data['to_endorser_email']],
+                            #     fail_silently=False,
+                            # )
+                            
+                            absurl = settings.BASE_URL+'endorsements/pending'
+                            email_body = 'Hi '+my_object.username + ', you have endorsement request from agent.' + '\n Use the link below to check the endorsement request \n' + absurl
+                            data = {'email_body': email_body, 'to_email': my_object.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                            Util.send_email(data)
                             
                     try:
                         with transaction.atomic():
@@ -3250,77 +3261,6 @@ class AgentCreatePlayersAndCoachesEndorsementAPIView(APIView):
             else:
                 return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(players_coaches_under_me_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
-#     def post(self, request, *args, **kwargs):
-#         endorsement_request = request.data.get('endorsement_request')
-#         # print(players_and_coaches_under_me)
-#         # Check if 'id' is present in request data
-#         if endorsement_request == '':
-#             # If 'id' is not present, it's an update operation
-#             return self.update(request, *args, **kwargs)
-#         else:
-#             # If 'id' is present, it's a create operation      
-#             print(endorsement_request)    
-#             # serializer = BulkCreateAgentPlayersCoachesUnderMeSerializer(data=players_and_coaches_under_me, many=True)
-
-#             # # Validate the data for each model
-#             # if serializer.is_valid():
-#             #     serializer.save()
-#             #     # return self.update(request, *args, **kwargs)
-#             #     return Response(serializer.data, status=status.HTTP_201_CREATED)
-#             # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
-            
-#             if isinstance(endorsement_request, list):
-#                 serializer = FootballAgentEndorsementRequestSerializer(data=endorsement_request, many=True)
-#                 if serializer.is_valid():
-#                     try:
-#                         with transaction.atomic():
-#                             FootballAgentEndorsementRequest.objects.bulk_create([
-#                                 FootballAgentEndorsementRequest(**item) for item in serializer.validated_data
-#                             ])
-#                         # return Response(serializer.data, status=status.HTTP_201_CREATED)
-                        
-#                         # recipient_list = []
-
-#                         # for recipient in endorsement_request:
-#                         #     recipient_list.append(
-#                         #         recipient.to_endorser_email
-#                         #     )
-                        
-#                         for email_data in serializer.validated_data:
-#                             send_mail(
-#                                 subject='Endorsement Request',
-#                                 message='Endorsement Request from Agent',
-#                                 from_email='athletescouting@gmail.com',
-#                                 recipient_list=[email_data['to_endorser_email']],
-#                                 fail_silently=False,
-#                             )
-                            
-#                         return self.update(request, *args, **kwargs)
-#                     except Exception as e:
-#                         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#             else:
-#                 return Response({"error": "Expected a list of items"}, status=status.HTTP_400_BAD_REQUEST)
-
-#     def update(self, request, *args, **kwargs):
-#         # Get the instance to update
-#         instance_id = request.data.get('id')  # Remove 'id' from data
-#         try:
-#             instance = FootballPlayersAndCoachesUnderMe.objects.get(pk=instance_id)
-#         except FootballPlayersAndCoachesUnderMe.DoesNotExist:
-#             return Response({"error": "Instance does not exist"}, status=404)
-        
-#         agent_players_coaches_under_me_data = {key: request.data[key] for key in ['id', 'type', 'user_id', 'name', 'is_notable']}
-#         # print(agent_career_history_data)
-        
-#         # Update the instance
-#         serializer = FootballPlayersAndCoachesUnderMeSerializer(instance, data=agent_players_coaches_under_me_data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=200)
-#         return Response(serializer.errors, status=400)
     
 class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -3341,48 +3281,48 @@ class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
                         # print(item_data['to_endorser'])
                         if item_data['to_endorser'] is None:
                             # random_str = generate_random_string(10)
-                            random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
-                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'contact_no':  random_contact_numbers, 'is_active': False}
+                            # random_contact_numbers = ''.join(['9'] + [str(random.randint(2, 9)) for _ in range(1, 10)])
+                            new_user = {'username': get_random_string(7), 'password': 'welCome@123', 'password2': 'welCome@123', 'email': item_data['to_endorser_email'], 'is_active': False}
                             print(new_user)
                             user_serializer = UserSerializer(data=new_user)
                             if user_serializer.is_valid():
                                 user_instance = user_serializer.save()
-                                # print(user_serializer.data)
-                                # print(user_instance)
                                 
-                                # Extract 'id' from model1_instance
-                                # user_instance_id = user_instance.id
-                                # print(user_instance_id)
-                
-                                # Assign id to the appropriate field in Model2
                                 item_data['to_endorser'] = user_instance
-                                # print(item_data['to_endorser'])
                                 
-                                # print(serializer.validated_data)
+                                # send_mail(
+                                #     subject='Endorsement Request',
+                                #     message='Endorsement request from agent for registration',
+                                #     from_email='athletescouting@gmail.com',
+                                #     recipient_list=[item_data['to_endorser_email']],
+                                #     fail_silently=False,
+                                # )
                                 
-                                # user_serializer.save()
-                                # # Access the saved object instance
-                                # saved_object = user_serializer.instance
-                                # # Now you can access any attribute of the saved object
-                                # item_data['to_endorser'] = saved_object.id
-                                
-                                send_mail(
-                                    subject='Endorsement Request',
-                                    message='Endorsement request from agent for registration',
-                                    from_email='athletescouting@gmail.com',
-                                    recipient_list=[item_data['to_endorser_email']],
-                                    fail_silently=False,
-                                )
+                                absurl = settings.BASE_URL+'register?email=' + user_instance.email
+                                email_body = 'Hi '+ user_instance.username + ', you have a registration request from Bscoutd.' +'\n Use the link below to register \n' + absurl
+                                data = {'email_body': email_body, 'to_email': user_instance.email,
+                                            'email_subject': 'Endorsement Request'}
+
+                                Util.send_email(data)
                             else:
                                 return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            send_mail(
-                                subject='Endorsement Request',
-                                message='Endorsement Request from Agent',
-                                from_email='athletescouting@gmail.com',
-                                recipient_list=[item_data['to_endorser_email']],
-                                fail_silently=False,
-                            )
+                            # send_mail(
+                            #     subject='Endorsement Request',
+                            #     message='Endorsement Request from Agent',
+                            #     from_email='athletescouting@gmail.com',
+                            #     recipient_list=[item_data['to_endorser_email']],
+                            #     fail_silently=False,
+                            # )
+                            
+                            my_object = CustomUser.objects.get(email=item_data['to_endorser_email'])
+                            
+                            absurl = settings.BASE_URL+'endorsements/pending'
+                            email_body = 'Hi '+my_object.username + ', you have endorsement request from agent.' + '\n Use the link below to check the endorsement request \n' + absurl
+                            data = {'email_body': email_body, 'to_email': my_object.email,
+                                        'email_subject': 'Endorsement Request'}
+
+                            Util.send_email(data)
                             
                     try:
                         with transaction.atomic():
@@ -3417,20 +3357,6 @@ class AgentPlayerAndCoachesEndorsementUpdateAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
-    
-
-# class AgentEndorsementRequestViewSet(viewsets.ModelViewSet):
-    
-#     queryset = FootballAgentEndorsementRequest.objects.all()
-#     serializer_class = GetAgentEndorsementRequestSerializer
-
-#     @action(detail=True, methods=['get'])
-#     def request_list(self, request, pk=None):
-#     #    users = self.get_object() # retrieve an object by pk provided
-#        users = FootballAgentEndorsementRequest.objects.filter(to_endorser = pk).order_by('-id')
-#     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
-#        user_list_json = GetAgentEndorsementRequestSerializer(users, many=True)
-#        return Response(user_list_json.data)
 
 class ChangeSportProfileTypeAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -3624,8 +3550,26 @@ class SportProfileTypeCreateAndUpdateAPIView(APIView):
                             return Response(serializer_agent.errors, status=400) 
                 else:
                     user_instance.account_type = 'institute'
-                    if not user_instance.is_flag and user_instance.club_name is not None and user_instance.contact_no is not None and user_instance.dob is not None:
-                        user_instance.is_flag = True
+                    # if not user_instance.is_flag and user_instance.club_name is not None and user_instance.contact_no is not None and user_instance.dob is not None:
+                    #     user_instance.is_flag = True
+                    # to be removed
+                    try:
+                       Team.objects.get(reg_id=user_instance.reg_id)
+                    except Team.DoesNotExist:
+                        register_id = str(uuid.uuid4())[:36]
+                        # Manually construct the data you want to save
+                        team_data = {
+                            'club_name': user_instance.club_name,  # Replace with actual values or variables
+                            'reg_id': register_id,
+                            # ... other fields ...
+                        }
+                        user_instance.reg_id=register_id
+                        # print(team_data)
+                        team_serializer = TeamSerializer(data=team_data)
+                        
+                        if team_serializer.is_valid():
+                            team_serializer.save()
+                    
                     user_instance.save()
                     club_data = {key: data[key] for key in ['user']}
                     try:
@@ -3685,24 +3629,51 @@ class GetInstitutionViewSet(APIView):
         except CustomUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         
+# class GetPlayerEndorsementRequest(viewsets.ModelViewSet):
+#     queryset = FootballPlayerEndorsementRequest.objects.all()
+#     serializer_class = FootballPlayerEndorsementRequestSerializer
+    
+#     @action(detail=True, methods=['get'])
+#     def request_list(self, request, pk=None):
+#     #    users = self.get_object() # retrieve an object by pk provided
+#        users = FootballPlayerEndorsementRequest.objects.filter(to_endorser = pk)
+#     #    user_list = MyNetworkRequest.objects.filter(id=users).distinct()
+#        user_list_json = FootballPlayerEndorsementRequestSerializer(users, many=True)
+#        return Response(user_list_json.data)
+
+class GetPlayerEndorsementRequest(APIView):
+    def get(self, request):
+        # Extract the filter value from the query parameters
+        user_id = request.GET.get('user_id')  # or any other field you want to filter by
+        
+        # Filter the data based on the extracted value
+        filtered_data = FootballPlayerEndorsementRequest.objects.filter(to_endorser=user_id)
+        
+        # Serialize the filtered data
+        serializer = GetPlayerEndorsementRequestSerializer(filtered_data, many=True)
+        
+        # Return the serialized data as a response
+        return Response(serializer.data)
+    
+class GetCoachEndorsementRequest(APIView):
+    def get(self, request):
+        # Extract the filter value from the query parameters
+        user_id = request.GET.get('user_id')  # or any other field you want to filter by
+        
+        # Filter the data based on the extracted value
+        filtered_data = FootballCoachEndorsementRequest.objects.filter(to_endorser=user_id)
+        
+        # Serialize the filtered data
+        serializer = GetCoachEndorsementRequestSerializer(filtered_data, many=True)
+        
+        # Return the serialized data as a response
+        return Response(serializer.data)
+        
 class DeleteAllUsersView(APIView):
     def delete(self, request):
         CustomUser.objects.all().delete()
         Address.objects.all().delete()
         return Response({"message": "All users deleted"}, status=status.HTTP_204_NO_CONTENT)
-    
-# class CreateInstituteProfileView(APIView):
-#     def post(self, request):
-#         serializer = CreateInstituteProfileSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user = request.user
-#             print(user)
-#             if user.check_password('welCome@123'):
-#                 user.set_password(serializer.data.get('new_password'))
-#                 user.save()
-#                 return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
-#             return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CreateInstituteProfileView(APIView):
     def post(self, request):
@@ -3721,8 +3692,7 @@ class CreateInstituteProfileView(APIView):
                     current_site = get_current_site(request).domain
                     relativeLink = reverse('email-verify')
                     absurl = 'http://'+current_site+relativeLink+"?token="+str(token)
-                    email_body = 'Hi '+user.club_name + \
-                        ' Use the link below to verify your email \n' + absurl
+                    email_body = 'Hi '+user.club_name + ',\n Use the link below to verify your email \n' + absurl
                     data = {'email_body': email_body, 'to_email': user.email,
                             'email_subject': 'Verify your email'}
 

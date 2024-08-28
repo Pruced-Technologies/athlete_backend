@@ -83,6 +83,7 @@ def register_social_user(provider, email, first_name, last_name):
         user.auth_provider=provider
         user.is_verified=True
         user.save()
+        
         # login_user=authenticate(email=email, password=settings.SOCIAL_AUTH_PASSWORD)
        
         # tokens=login_user.tokens()

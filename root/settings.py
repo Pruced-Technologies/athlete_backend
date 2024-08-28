@@ -243,3 +243,7 @@ GOOGLE_CLIENT_ID = "1014960776137-2htfln1r4dvtoglso2cbmg9p45s0ihn0.apps.googleus
 GOOGLE_CLIENT_SECRET = "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"
 
 # SOCIAL_AUTH_PASSWORD="jgk348030gjw03"
+
+# BASE_URL = "https://bscoutd.com/"
+
+BASE_URL = "http://127.0.0.1:3000/"

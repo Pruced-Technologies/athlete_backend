@@ -164,6 +164,14 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def get_age(self, obj):
         return obj.calculate_age()
     
+# class GetPlayerEndorsementSerializer(serializers.ModelSerializer):
+#     player_career_history = PlayerCareerHistorySerializer()
+
+#     class Meta:
+#         ordering = ['-id']
+#         model = FootballPlayerEndorsementRequest
+#         fields = "__all__"
+    
 class GetFootballPlayerEndorsementRequestSerializer(serializers.ModelSerializer):
     to_endorser = CustomUserSerializer()
     from_endorsee = CustomUserSerializer()
@@ -189,6 +197,28 @@ class ClubSerializer(serializers.ModelSerializer):
         model = Club
         fields = '__all__'
         extra_kwargs = {'players': {'required': False}}
+        
+class PlayerCareerHistorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Club
+        fields = '__all__'
+  
+# class GetPlayerEndorsementSerializer(serializers.ModelSerializer):
+#     player_career_history = PlayerCareerHistorySerializer()
+
+#     class Meta:
+#         ordering = ['-id']
+#         model = FootballPlayerEndorsementRequest
+#         fields = "__all__"    
+          
+class GetPlayerEndorsementRequestSerializer(serializers.ModelSerializer):
+    from_endorsee = CustomUserSerializer()
+    player_career_history = PlayerCareerHistorySerializer()
+    
+    class Meta:
+        model = FootballPlayerEndorsementRequest
+        fields = "__all__"
 
 # class AcheivementsSerializer(serializers.ModelSerializer):
 
@@ -472,6 +502,21 @@ class FootballCoachCareerHistorySerializer(serializers.ModelSerializer):
         model = FootballCoachCareerHistory
         fields = '__all__'
         extra_kwargs = {'coach_id': {'required': False}}
+        
+class CoachCareerHistorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        ordering = ['-id']
+        model = FootballCoachCareerHistory
+        fields = '__all__'
+        
+class GetCoachEndorsementRequestSerializer(serializers.ModelSerializer):
+    from_endorsee = CustomUserSerializer()
+    coach_career_history = CoachCareerHistorySerializer()
+    
+    class Meta:
+        model = FootballCoachEndorsementRequest
+        fields = "__all__"
         
 class CoachLicenseSerializer(serializers.ModelSerializer):
 

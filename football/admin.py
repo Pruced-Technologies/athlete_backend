@@ -131,3 +131,7 @@ class FootballPlayerEndorsementRequestAdmin(admin.ModelAdmin):
 @admin.register(FootballCoachEndorsementRequest)
 class FootballCoachEndorsementRequestAdmin(admin.ModelAdmin):
     list_display = ("id", "to_endorser_email", "to_endorser", "from_endorsee", "type", "status")
+    
+@admin.register(FootballClubVerificationDocument)
+class FootballClubVerificationDocumentAdmin(admin.ModelAdmin):
+    list_display = ("id", "document_type", "document_name", "club_id")
