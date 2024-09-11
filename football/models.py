@@ -69,6 +69,7 @@ class CustomUser(AbstractUser):
     # sport_profile_type = models.ManyToManyField(SportProfileType, blank=True)
     height = models.IntegerField(null=True,blank=True)
     weight = models.IntegerField(null=True,blank=True)
+    country_code = models.CharField(max_length=5,null=True,blank=True)
     contact_no = models.CharField(max_length=14,null=True,blank=True)
     # present_address = models.ForeignKey(Address, on_delete=models.CASCADE,related_name='present_address',null=True,blank=True)
     # permanent_address = models.ForeignKey(Address, on_delete=models.CASCADE,related_name='permanent_address',null=True,blank=True)
@@ -449,7 +450,7 @@ class MyNetworkRequest(models.Model):
 
     def __str__(self):
         # return self.to_user
-        return "%s %s %s" % (self.from_user.username, self.to_user, self.status)
+        return "%s %s %s" % (self.from_user.email, self.to_user, self.status)
     
 class NetworkConnected(models.Model):
     id = models.AutoField(primary_key=True)
@@ -457,9 +458,10 @@ class NetworkConnected(models.Model):
     status = models.CharField(max_length=100,null=True,blank=True)
     user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='connected_users', null=True, blank=True)
     network_request_id = models.IntegerField(null=True,blank=True)
+    network_request_send_by = models.IntegerField(null=True,blank=True)
 
     def __str__(self):
-        return "%s %s" % (self.connect_to_user.username, self.status)
+        return "%s %s" % (self.connect_to_user.email, self.status)
     
 # class Reference(models.Model):
 #     id = models.AutoField(primary_key=True)

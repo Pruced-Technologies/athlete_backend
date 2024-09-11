@@ -17,7 +17,7 @@ from rest_framework_simplejwt.views import (
 
 router = routers.DefaultRouter()
 router.register(r'user', UserViewSet, basename='user')
-router.register(r'instituitioninfo', InstituitionViewSet, basename='instituitioninfo')
+router.register(r'instituitioninfo', InstitutionViewSet, basename='instituitioninfo')
 router.register(r'sportprofiletype', SportProfileTypeViewSet, basename='sportprofiletype')
 router.register(r'sportprofiletype/:pk/request_list', SportProfileTypeViewSet, basename='sportprofiletypepk')
 router.register(r'address', AddressViewSet, basename='address')
@@ -100,6 +100,7 @@ urlpatterns = [
     path('changepassword/', views.change_password, name='change_password'),
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path('changepresentaddress/', PresentAddressUpdateView.as_view(), name='changepresentaddress'),
+    path('addaddress/', AddAddressAPIViewSet.as_view(), name='addaddress'),
     path('playerhistory/', MultiModelCreateAPIView.as_view(), name='playerhistory'),
     path('playerhistorycreate/', MultiModelCreateUpdateAPIView.as_view(), name='playerhistorycreate'),
     path('playerhistoryleagueupdate/', PlayerLeagueModelUpdateAPIView.as_view(), name='playerhistoryleagueupdate'),
@@ -127,6 +128,7 @@ urlpatterns = [
     path('instituitioncareerhistorycreate/', FootballClubHistoryCreateAPIView.as_view(), name='instituitioncareerhistorycreate'),
     path('instituitioncareerhistoryupdate/', FootballClubHistoryUpdateAPIView.as_view(), name='instituitioncareerhistoryupdate'),
     path('get/instituition/<slug:slug>/', GetInstitutionViewSet.as_view(), name='get_instituition'),
+    path('createnetworkrequest/', MyNetworkRequestAPIView.as_view(), name='createnetworkrequest'),
     path('', include(router.urls)),
     
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
